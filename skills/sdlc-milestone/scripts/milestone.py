@@ -50,7 +50,35 @@ def main() -> None:
         if not milestones_file.exists():
             print(json.dumps({"status": "ok", "milestones": [], "overall_rag": "green"}))
             return
-        print(json.dumps({"status": "ok", "milestones": [], "overall_rag": "green"}))
+        content = milestones_file.read_text(encoding="utf-8")
+        milestones = []
+        current: dict = {}
+        for line in content.splitlines():
+            if line.startswith("## ") and not line.startswith("## Milestones"):
+                if current:
+                    milestones.append(current)
+                current = {"name": line.lstrip("# ").strip()}
+            elif current:
+                st_m = __import__("re").match(r"\*\*Status:\*\*\s*(.+)", line)
+                if st_m:
+                    st = st_m.group(1).lower()
+                    if "green" in st or "🟢" in st:
+                        current["rag"] = "green"
+                    elif "red" in st or "🔴" in st:
+                        current["rag"] = "red"
+                    else:
+                        current["rag"] = "amber"
+                prog_m = __import__("re").match(r"\*\*Progresso:\*\*\s*(\d+)%", line)
+                if prog_m:
+                    current["progress"] = int(prog_m.group(1))
+                target_m = __import__("re").match(r"\*\*Data-alvo:\*\*\s*(.+)", line)
+                if target_m:
+                    current["target_date"] = target_m.group(1).strip()
+        if current:
+            milestones.append(current)
+        rag_order = {"red": 2, "amber": 1, "green": 0}
+        worst = max((m.get("rag", "green") for m in milestones), key=lambda r: rag_order.get(r, 0), default="green")
+        print(json.dumps({"status": "ok", "milestones": milestones, "overall_rag": worst}))
         return
 
     rag = _rag_status(args.target_date, 0)

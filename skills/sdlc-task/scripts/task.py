@@ -89,9 +89,11 @@ def main() -> None:
 
         original = lines[line_idx]
         if args.status == "done":
-            updated = original.replace("- [ ]", "- [x]", 1)
-        else:
-            updated = original.replace("- [x]", "- [ ]", 1)
+            updated = original.replace("- [ ]", "- [x]", 1).replace("- [-]", "- [x]", 1)
+        elif args.status == "in-progress":
+            updated = original.replace("- [ ]", "- [-]", 1).replace("- [x]", "- [-]", 1)
+        else:  # open
+            updated = original.replace("- [x]", "- [ ]", 1).replace("- [-]", "- [ ]", 1)
 
         if args.dry_run:
             print(json.dumps({"status": "dry-run", "line": args.task_id, "original": original.rstrip(), "updated": updated.rstrip()}))
