@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:prd
-description: Create a Product Requirements Document for an initiative
+name: sdlc-prd
+description: Esta skill deve ser usada para criar um Product Requirements Document (PRD) em 01-planning/, ou quando o usuário invoca /sdlc-kit:prd. Gera documento estruturado com objetivos, escopo, critérios de sucesso e stakeholders. Use para iniciativas macro antes de decompor em features individuais.
 ---
 
 # sdlc-kit:prd

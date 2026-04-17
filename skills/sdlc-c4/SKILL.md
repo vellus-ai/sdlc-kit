@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:c4
-description: Generate C4 architecture diagrams in Mermaid markdown
+name: sdlc-c4
+description: Esta skill deve ser usada para gerar diagramas C4 em Mermaid (C4Context, Container, Component), ou quando o usuário invoca /sdlc-kit:c4. Produz arquivos markdown com diagramas renderizáveis em 02-architecture/. Use para documentar arquitetura em 3 níveis de granularidade.
 ---
 
 # sdlc-kit:c4

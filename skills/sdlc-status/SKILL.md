@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:status
-description: Show vault health summary — quick context for the LLM at session start
+name: sdlc-status
+description: Esta skill deve ser usada para obter um resumo JSON da saúde do vault SDLC, ou quando o usuário invoca /sdlc-kit:status. Retorna contagem de notas por fase, eventos recentes, worktrees ativos e alertas. Útil para check-in rápido do estado do projeto.
 ---
 
 # sdlc-kit:status

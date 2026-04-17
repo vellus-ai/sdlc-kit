@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:spec
-description: Create a SDD spec trio for a feature — requirements, design, tasks
+name: sdlc-spec
+description: Esta skill deve ser usada para criar o trio SDD (Spec-Driven Development) de uma feature — requirements.md (formato EARS), design.md e tasks.md — ou quando o usuário invoca /sdlc-kit:spec. Todos os 3 arquivos são gerados em 03-development/<feature-slug>/ com frontmatter e wikilinks. É o fluxo principal para definir trabalho novo.
 ---
 
 # sdlc-kit:spec

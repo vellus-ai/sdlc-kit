@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:sync
-description: Run the vault librarian — validate frontmatter, update MOCs and INDEX
+name: sdlc-sync
+description: Esta skill deve ser usada para validar o vault SDLC e regenerar índices e MOCs, ou quando o usuário invoca /sdlc-kit:sync. Valida frontmatter de todas as notas, atualiza _INDEX.md vivo, reporta anomalias e inconsistências. Invoque após edições em massa ou para diagnosticar problemas no vault.
 ---
 
 # sdlc-kit:sync

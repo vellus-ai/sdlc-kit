@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:domain
-description: Create DDD domain documentation for a bounded context
+name: sdlc-domain
+description: Esta skill deve ser usada para criar documentação DDD de um bounded context, ou quando o usuário invoca /sdlc-kit:domain. Gera context-map.md (Mermaid), ubiquitous-language.md e domain-events.md em 04-domain/. Use ao modelar novos contextos ou refinar ubiquitous language.
 ---
 
 # sdlc-kit:domain

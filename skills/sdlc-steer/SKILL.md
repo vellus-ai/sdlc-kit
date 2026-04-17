@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:steer
-description: Update vault steering rules in CLAUDE.md
+name: sdlc-steer
+description: Esta skill deve ser usada para atualizar seções específicas do CLAUDE.md do vault de forma segura, ou quando invoca /sdlc-kit:steer. Modifica a doutrina do vault sem sobrescrever conteúdo crítico. Use para adicionar regras de escrita, schemas de frontmatter ou ajustes de estilo.
 ---
 
 # sdlc-kit:steer

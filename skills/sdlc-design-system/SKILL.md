@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:design-system
-description: Create or update design system documentation (tokens, components, patterns)
+name: sdlc-design-system
+description: Esta skill deve ser usada para documentar tokens de design, componentes e padrões, ou quando o usuário invoca /sdlc-kit:design-system. Mantém 06-design-system/ com specs de tokens (cores, tipografia, espaçamento), biblioteca de componentes e padrões de interação.
 ---
 
 # sdlc-kit:design-system

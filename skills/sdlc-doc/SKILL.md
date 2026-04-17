@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:doc
-description: Generate a document from any vault template
+name: sdlc-doc
+description: Esta skill deve ser usada para gerar um documento genérico a partir de um template configurável, ou quando o usuário invoca /sdlc-kit:doc. Suporta qualquer tipo de documento (tech-design, api-design, runbook, etc.) usando templates em _templates/ de cada fase.
 ---
 
 # sdlc-kit:doc

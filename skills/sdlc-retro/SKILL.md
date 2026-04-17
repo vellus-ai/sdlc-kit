@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:retro
-description: Create retrospective documents and track action items
+name: sdlc-retro
+description: Esta skill deve ser usada para criar retrospectivas de sprint/ciclo e rastrear itens de ação, ou quando o usuário invoca /sdlc-kit:retro. Gera documentos em 07-retrospectives/ com seções (o que funcionou, o que não funcionou, ações) e rastreia follow-ups.
 ---
 
 # sdlc-kit:retro

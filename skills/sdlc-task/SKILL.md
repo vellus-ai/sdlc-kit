@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:task
-description: Manage TASKS.md — add, update status, link branches
+name: sdlc-task
+description: Esta skill deve ser usada para adicionar, listar ou atualizar status de tarefas em TASKS.md, ou quando o usuário invoca /sdlc-kit:task. Suporta vinculação com épicos via [EPIC] e com branches via @branch. Estados: open, in-progress, done.
 ---
 
 # sdlc-kit:task

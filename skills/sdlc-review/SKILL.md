@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:review
-description: Phase completeness checklist — verify all required documents exist
+name: sdlc-review
+description: Esta skill deve ser usada para rodar checklist de completude antes de PR, ou quando o usuário invoca /sdlc-kit:review. Verifica: specs trios SDD completos, frontmatter válido, TASKS.md atualizado, ADRs não travados em review. Retorna JSON estruturado.
 ---
 
 # sdlc-kit:review

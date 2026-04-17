@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:init
-description: Scaffold a new SDLC vault inside the current Git repository
+name: sdlc-init
+description: Esta skill deve ser usada quando o usuário quer iniciar um vault SDLC (Spec-Driven Development) dentro de um projeto Git, ou quando invoca /sdlc-kit:init. Conduz entrevista de 7 perguntas sobre o projeto e scaffolda um vault completo em .sdlc/ com 7 fases (planning, architecture, development, domain, operations, design-system, retrospectives), CLAUDE.md doutrina, _INDEX.md vivo, dashboard HTML autocontido e SQLite para rastreamento. Idempotente. Não executar sem intenção explícita do usuário.
 ---
 
 # sdlc-kit:init

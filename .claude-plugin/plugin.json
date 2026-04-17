@@ -2,38 +2,37 @@
   "name": "sdlc-kit",
   "version": "0.1.0",
   "description": "Spec-Driven Development vault for Claude Code projects — 20 skills, SDD/DDD, dashboard, git worktrees",
-  "author": "Vellus AI <contato@vellus.tech>",
-  "license": "MIT",
+  "author": {
+    "name": "Vellus AI",
+    "email": "contato@vellus.tech",
+    "url": "https://github.com/vellus-ai"
+  },
   "homepage": "https://github.com/vellus-ai/sdlc-kit",
   "repository": "https://github.com/vellus-ai/sdlc-kit",
-  "keywords": ["sdd", "ddd", "vault", "obsidian", "spec", "adr", "kanban", "worktree"],
-  "category": "productivity",
-  "hooks": [
-    {
-      "event": "PostToolUse",
-      "script": "hooks/post-vault-write.py"
-    }
+  "license": "MIT",
+  "keywords": [
+    "sdd",
+    "spec-driven-development",
+    "ddd",
+    "vault",
+    "obsidian",
+    "adr",
+    "kanban",
+    "worktree",
+    "c4-diagrams",
+    "productivity"
   ],
-  "skills": [
-    { "name": "sdlc-kit:init",         "path": "skills/sdlc-init/SKILL.md" },
-    { "name": "sdlc-kit:sync",         "path": "skills/sdlc-sync/SKILL.md" },
-    { "name": "sdlc-kit:status",       "path": "skills/sdlc-status/SKILL.md" },
-    { "name": "sdlc-kit:steer",        "path": "skills/sdlc-steer/SKILL.md" },
-    { "name": "sdlc-kit:spec",         "path": "skills/sdlc-spec/SKILL.md" },
-    { "name": "sdlc-kit:prd",          "path": "skills/sdlc-prd/SKILL.md" },
-    { "name": "sdlc-kit:adr",          "path": "skills/sdlc-adr/SKILL.md" },
-    { "name": "sdlc-kit:doc",          "path": "skills/sdlc-doc/SKILL.md" },
-    { "name": "sdlc-kit:epic",         "path": "skills/sdlc-epic/SKILL.md" },
-    { "name": "sdlc-kit:milestone",    "path": "skills/sdlc-milestone/SKILL.md" },
-    { "name": "sdlc-kit:task",         "path": "skills/sdlc-task/SKILL.md" },
-    { "name": "sdlc-kit:review",       "path": "skills/sdlc-review/SKILL.md" },
-    { "name": "sdlc-kit:domain",       "path": "skills/sdlc-domain/SKILL.md" },
-    { "name": "sdlc-kit:c4",           "path": "skills/sdlc-c4/SKILL.md" },
-    { "name": "sdlc-kit:design-system","path": "skills/sdlc-design-system/SKILL.md" },
-    { "name": "sdlc-kit:trace",        "path": "skills/sdlc-trace/SKILL.md" },
-    { "name": "sdlc-kit:impact",       "path": "skills/sdlc-impact/SKILL.md" },
-    { "name": "sdlc-kit:worktree",     "path": "skills/sdlc-worktree/SKILL.md" },
-    { "name": "sdlc-kit:retro",        "path": "skills/sdlc-retro/SKILL.md" },
-    { "name": "sdlc-kit:dash",         "path": "skills/sdlc-dash/SKILL.md" }
-  ]
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/post-vault-write.py\""
+          }
+        ]
+      }
+    ]
+  }
 }

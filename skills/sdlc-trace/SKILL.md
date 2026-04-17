@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:trace
-description: Generate a traceability matrix linking requirements to design to tasks
+name: sdlc-trace
+description: Esta skill deve ser usada para gerar matriz de rastreabilidade (requisitos EARS → tasks de implementação), ou quando o usuário invoca /sdlc-kit:trace. Mapeia cada requirement do requirements.md para tasks concretas em tasks.md, identificando cobertura incompleta.
 ---
 
 # sdlc-kit:trace

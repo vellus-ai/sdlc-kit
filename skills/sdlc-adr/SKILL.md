@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:adr
-description: Create an Architecture Decision Record with auto-numbering
+name: sdlc-adr
+description: Esta skill deve ser usada para criar um Architecture Decision Record com numeração automática (ADR-NNN), ou quando o usuário invoca /sdlc-kit:adr. Registra decisões arquiteturais com contexto, alternativas consideradas e consequências. Numeração é incremental dentro de 02-architecture/ADR/.
 ---
 
 # sdlc-kit:adr

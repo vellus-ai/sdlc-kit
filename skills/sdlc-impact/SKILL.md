@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:impact
-description: Analyze the impact of changing a concept across the entire vault
+name: sdlc-impact
+description: Esta skill deve ser usada para analisar o impacto de alterar um conceito através de todo o vault, ou quando o usuário invoca /sdlc-kit:impact. Busca todas as ocorrências de um termo/conceito e lista arquivos afetados. Use antes de renomear conceitos ou refatorar modelos de domínio.
 ---
 
 # sdlc-kit:impact

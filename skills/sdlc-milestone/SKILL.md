@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:milestone
-description: Create milestones with RAG status and deadline tracking
+name: sdlc-milestone
+description: Esta skill deve ser usada para criar milestones com RAG status (🔴 Red / 🟡 Amber / 🟢 Green) calculado automaticamente, ou quando o usuário invoca /sdlc-kit:milestone. Vincula épicos a datas-alvo e calcula saúde baseado em progresso vs. prazo.
 ---
 
 # sdlc-kit:milestone

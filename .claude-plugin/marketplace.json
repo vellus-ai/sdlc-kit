@@ -1,23 +1,37 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "sdlc-kit",
-  "display_name": "SDLC Kit",
-  "version": "0.1.0",
   "description": "Spec-Driven Development vault para Claude Code — cria e mantém um vault `.sdlc/` versionado no seu repositório Git com 20 skills cobrindo o ciclo completo de desenvolvimento (SDD, DDD, Kanban, ADRs, C4, worktrees, retros).",
-  "author": "Vellus AI",
-  "author_url": "https://github.com/vellus-ai",
-  "license": "MIT",
-  "repository": "https://github.com/vellus-ai/sdlc-kit",
-  "homepage": "https://github.com/vellus-ai/sdlc-kit",
-  "keywords": ["sdd", "ddd", "vault", "obsidian", "spec", "adr", "kanban", "worktree", "productivity"],
-  "category": "productivity",
-  "install": {
-    "type": "github",
-    "repo": "vellus-ai/sdlc-kit",
-    "ref": "main"
+  "owner": {
+    "name": "Vellus AI",
+    "email": "contato@vellus.tech"
   },
-  "requirements": {
-    "python": ">=3.11"
-  },
-  "screenshots": [],
-  "changelog_url": "https://github.com/vellus-ai/sdlc-kit/blob/main/CHANGELOG.md"
+  "plugins": [
+    {
+      "name": "sdlc-kit",
+      "description": "Plugin para Claude Code que cria e mantém um vault de Spec-Driven Development (SDD) dentro do seu repositório Git. Base de conhecimento versionada, Obsidian-compatível, otimizada para LLMs. 20 skills cobrem o ciclo completo: SDD, DDD, ADRs, C4, Kanban, milestones, git worktrees, retrospectivas e dashboard HTML autocontido.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Vellus AI",
+        "email": "contato@vellus.tech"
+      },
+      "source": "./",
+      "category": "productivity",
+      "homepage": "https://github.com/vellus-ai/sdlc-kit",
+      "repository": "https://github.com/vellus-ai/sdlc-kit",
+      "license": "MIT",
+      "keywords": [
+        "sdd",
+        "spec-driven-development",
+        "ddd",
+        "vault",
+        "obsidian",
+        "adr",
+        "kanban",
+        "worktree",
+        "c4-diagrams",
+        "productivity"
+      ]
+    }
+  ]
 }

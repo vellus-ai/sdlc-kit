@@ -1,3 +1,8 @@
+---
+name: sdlc-dash
+description: Esta skill deve ser usada para abrir o dashboard HTML do vault no browser, ou quando o usuário invoca /sdlc-kit:dash. Localiza dashboard.html dentro do vault atual e abre no browser padrão (Windows: start, macOS: open, Linux: xdg-open). Fallback: exibe caminho se abertura automática falhar.
+---
+
 # sdlc-kit:dash
 
 ## Quando invocar

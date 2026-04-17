@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:worktree
-description: Full git worktree lifecycle management integrated with SQLite tracking
+name: sdlc-worktree
+description: Esta skill deve ser usada para gerenciar o ciclo completo de git worktrees (create, list, close, sync), ou quando o usuário invoca /sdlc-kit:worktree. Cria branches isoladas para features, rastreia status de PR via gh CLI, sugere retrospectiva ao fechar. Registra tudo em SQLite.
 ---
 
 # sdlc-kit:worktree

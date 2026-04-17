@@ -1,6 +1,6 @@
 ---
-name: sdlc-kit:epic
-description: Create and manage epics with progress tracking
+name: sdlc-epic
+description: Esta skill deve ser usada para criar ou listar épicos em EPICS.md (append-only), ou quando o usuário invoca /sdlc-kit:epic. Épicos agrupam stories relacionadas e podem ser vinculados a milestones. Rastreados em SQLite para rastreabilidade.
 ---
 
 # sdlc-kit:epic
