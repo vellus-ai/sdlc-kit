@@ -11,7 +11,6 @@ _REQUIRED_FRONTMATTER = {"title", "type", "status", "phase"}
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--phase", default="", help="Phase to review (e.g. '03'), or all phases if empty")
     parser.add_argument("--vault-root")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()

@@ -2,6 +2,7 @@
 """Manage milestones with RAG status in 03-development/MILESTONES.md."""
 import argparse
 import json
+import re
 import sys
 from datetime import date, datetime
 from pathlib import Path
@@ -59,7 +60,7 @@ def main() -> None:
                     milestones.append(current)
                 current = {"name": line.lstrip("# ").strip()}
             elif current:
-                st_m = __import__("re").match(r"\*\*Status:\*\*\s*(.+)", line)
+                st_m = re.match(r"\*\*Status:\*\*\s*(.+)", line)
                 if st_m:
                     st = st_m.group(1).lower()
                     if "green" in st or "🟢" in st:
@@ -68,10 +69,10 @@ def main() -> None:
                         current["rag"] = "red"
                     else:
                         current["rag"] = "amber"
-                prog_m = __import__("re").match(r"\*\*Progresso:\*\*\s*(\d+)%", line)
+                prog_m = re.match(r"\*\*Progresso:\*\*\s*(\d+)%", line)
                 if prog_m:
                     current["progress"] = int(prog_m.group(1))
-                target_m = __import__("re").match(r"\*\*Data-alvo:\*\*\s*(.+)", line)
+                target_m = re.match(r"\*\*Data-alvo:\*\*\s*(.+)", line)
                 if target_m:
                     current["target_date"] = target_m.group(1).strip()
         if current:

@@ -609,9 +609,9 @@ function inlineRender(text) {
     return `<button class="wikilink" data-target="${escAttr(target)}">${escHtml(display)}</button>`;
   });
   // Bold **text**
-  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  text = text.replace(/\*\*(.+?)\*\*/g, (_, c) => `<strong>${escHtml(c)}</strong>`);
   // Italic *text* (not **)
-  text = text.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+  text = text.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, (_, c) => `<em>${escHtml(c)}</em>`);
   // Inline code `code`
   text = text.replace(/`([^`]+)`/g, (_, c) => `<code>${escHtml(c)}</code>`);
   // Links [label](url)
