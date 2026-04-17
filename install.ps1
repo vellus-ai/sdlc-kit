@@ -57,13 +57,29 @@ if ($pythonScripts -and (Test-Path $pythonScripts)) {
 }
 
 # ── Registrar plugin no Claude Code ─────────────────────────────────────────
-if ($claudeOk) {
-    Write-Step "Registrando plugin no Claude Code..."
-    & claude plugin install $InstallDir
-    if ($LASTEXITCODE -eq 0) { Write-Ok "Plugin registrado" } else { Write-Warn "Registro falhou — tente manualmente: claude plugin install $InstallDir" }
+$SettingsFile = "$env:USERPROFILE\.claude\settings.json"
+Write-Step "Registrando plugin em $SettingsFile..."
+if (Test-Path $SettingsFile) {
+    $pyScript = @'
+import json, sys
+path = sys.argv[1]
+with open(path, encoding="utf-8") as f:
+    s = json.load(f)
+s.setdefault("extraKnownMarketplaces", {})
+s["extraKnownMarketplaces"].setdefault("sdlc-kit", {
+    "source": {"source": "github", "repo": "vellus-ai/sdlc-kit"}
+})
+s.setdefault("enabledPlugins", {})
+s["enabledPlugins"]["sdlc-kit@sdlc-kit"] = True
+with open(path, "w", encoding="utf-8") as f:
+    json.dump(s, f, indent=2)
+print("ok")
+'@
+    $result = & python -c $pyScript $SettingsFile 2>&1
+    if ($LASTEXITCODE -eq 0) { Write-Ok "Plugin registrado (sdlc-kit@sdlc-kit)" }
+    else { Write-Warn "Falha ao atualizar settings.json: $result" }
 } else {
-    Write-Warn "Claude Code não encontrado. Quando instalado, execute:"
-    Write-Host "    claude plugin install $InstallDir"
+    Write-Warn "$SettingsFile não encontrado — abra o Claude Code uma vez e reexecute o instalador."
 }
 
 Write-Host ""

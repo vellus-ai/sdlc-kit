@@ -47,12 +47,27 @@ PY_SCRIPTS=$(python3 -c "import sysconfig; print(sysconfig.get_path('scripts'))"
 success "sdlc-kit instalado"
 
 # ── Registrar plugin no Claude Code ─────────────────────────────────────────
-if command -v claude >/dev/null; then
-  info "Registrando plugin no Claude Code..."
-  claude plugin install "$INSTALL_DIR" && success "Plugin registrado"
+SETTINGS_FILE="$HOME/.claude/settings.json"
+info "Registrando plugin em $SETTINGS_FILE..."
+if [[ -f "$SETTINGS_FILE" ]]; then
+  python3 - "$SETTINGS_FILE" <<'PY'
+import json, sys
+path = sys.argv[1]
+with open(path) as f:
+    s = json.load(f)
+s.setdefault("extraKnownMarketplaces", {})
+s["extraKnownMarketplaces"].setdefault("sdlc-kit", {
+    "source": {"source": "github", "repo": "vellus-ai/sdlc-kit"}
+})
+s.setdefault("enabledPlugins", {})
+s["enabledPlugins"]["sdlc-kit@sdlc-kit"] = True
+with open(path, "w") as f:
+    json.dump(s, f, indent=2)
+print("ok")
+PY
+  success "Plugin registrado (sdlc-kit@sdlc-kit)"
 else
-  warn "Claude Code não encontrado. Quando instalado, execute:"
-  echo "    claude plugin install $INSTALL_DIR"
+  warn "$SETTINGS_FILE não encontrado — abra o Claude Code uma vez e reexecute o instalador."
 fi
 
 echo ""
