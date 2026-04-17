@@ -25,6 +25,14 @@ def _find_git_root(start: Path) -> Path | None:
         current = parent
 
 
+_CORE_PATH = str(Path(__file__).parent.parent.parent.parent)
+
+
+def _bootstrap() -> None:
+    if _CORE_PATH not in sys.path:
+        sys.path.insert(0, _CORE_PATH)
+
+
 def _get_worktree_list() -> list[dict]:
     """Run git worktree list --porcelain and return parsed result."""
     result = subprocess.run(
@@ -34,7 +42,7 @@ def _get_worktree_list() -> list[dict]:
     )
     if result.returncode != 0:
         return []
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+    _bootstrap()
     from core.git import parse_worktree_list
     return parse_worktree_list(result.stdout)
 
@@ -44,7 +52,7 @@ def action_create(args) -> None:
         print(json.dumps({"status": "error", "message": "--branch is required for create"}))
         sys.exit(1)
 
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+    _bootstrap()
     from core.paths import find_vault_root
 
     vault = Path(args.vault_root) if args.vault_root else find_vault_root()
@@ -143,7 +151,7 @@ def action_close(args) -> None:
 
 
 def action_sync(args) -> None:
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+    _bootstrap()
     from core.paths import find_vault_root, get_db_path
     from core.db import connect
     from core.git import sync_worktrees

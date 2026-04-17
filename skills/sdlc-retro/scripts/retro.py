@@ -118,6 +118,12 @@ def action_add_action(args) -> None:
         print(json.dumps({"status": "error", "message": f"retro file not found: {args.retro_file}"}))
         sys.exit(1)
 
+    content = retro_file.read_text(encoding="utf-8")
+    section_header = "## Itens de ação"
+    if section_header not in content:
+        print(json.dumps({"status": "error", "message": f"section '{section_header}' not found in {args.retro_file}"}))
+        sys.exit(1)
+
     if args.dry_run:
         print(json.dumps({
             "status": "dry-run",
@@ -125,12 +131,6 @@ def action_add_action(args) -> None:
             "action_item": args.action_item,
         }))
         return
-
-    content = retro_file.read_text(encoding="utf-8")
-    section_header = "## Itens de ação"
-    if section_header not in content:
-        print(json.dumps({"status": "error", "message": f"section '{section_header}' not found in {args.retro_file}"}))
-        sys.exit(1)
 
     new_item = f"- [ ] {args.action_item}"
 

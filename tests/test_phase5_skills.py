@@ -162,12 +162,12 @@ class TestWorktreeSkill:
 
     # --- close ---
 
-    def test_close_dry_run_branch_not_found(self, vault_dir):
+    def test_close_dry_run_branch_not_found(self, git_vault_dir):
         """close --dry-run with a branch not in worktree list exits 1 (branch not found)."""
         result = run_script(self.SCRIPT, [
             "--action", "close",
             "--branch", "feat/login-google",
-            "--vault-root", str(vault_dir),
+            "--vault-root", str(git_vault_dir),
             "--dry-run",
         ])
         # Branch not found in git worktree list => error
@@ -176,10 +176,10 @@ class TestWorktreeSkill:
         assert data["status"] == "error"
         assert result.returncode == 1
 
-    def test_close_missing_branch(self, vault_dir):
+    def test_close_missing_branch(self, git_vault_dir):
         result = run_script(self.SCRIPT, [
             "--action", "close",
-            "--vault-root", str(vault_dir),
+            "--vault-root", str(git_vault_dir),
         ])
         assert result.returncode == 1
         data = json.loads(result.stdout)
