@@ -37,7 +37,27 @@ O SDLC Kit resolve isso criando um vault `.sdlc/` versionado no próprio reposit
 
 ## Instalação
 
-### Pré-requisitos
+### Instalação rápida (recomendado)
+
+**Linux / macOS:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/vellus-ai/sdlc-kit/main/install.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/vellus-ai/sdlc-kit/main/install.ps1 | iex
+```
+
+O script faz tudo automaticamente: clona o repositório em `~/.claude/plugins/sdlc-kit`, instala o pacote Python, inicializa o banco de dados e registra o plugin no Claude Code.
+
+> **Localização customizada:** defina `SDLC_KIT_DIR=/outro/caminho` antes de executar.
+
+---
+
+### Instalação manual
+
+#### Pré-requisitos
 
 | Ferramenta | Versão | Necessário para |
 |-----------|--------|----------------|
@@ -47,32 +67,12 @@ O SDLC Kit resolve isso criando um vault `.sdlc/` versionado no próprio reposit
 | `gh` CLI | qualquer | Sync de status de PR (opcional) |
 | PyYAML | 6+ | Frontmatter robusto (opcional) |
 
-### 1. Clonar e instalar
-
 ```bash
 git clone https://github.com/vellus-ai/sdlc-kit.git
 cd sdlc-kit
-
-# Instalação mínima
-pip install -e .
-
-# Com dependências de dev (para rodar testes)
-pip install -e ".[dev]"
-
-# Com PyYAML para frontmatter robusto
-pip install -e ".[yaml]"
-```
-
-### 2. Registrar o plugin no Claude Code
-
-```bash
-claude plugin install /caminho/para/sdlc-kit
-```
-
-### 3. Inicializar o banco de dados
-
-```bash
+pip install -e .            # ou: pip install -e ".[yaml,dev]"
 sdlc-kit init-db
+claude plugin install .
 ```
 
 ---
