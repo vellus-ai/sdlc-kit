@@ -56,18 +56,6 @@ if ($pythonScripts -and (Test-Path $pythonScripts)) {
     Write-Ok "sdlc-kit instalado"
 }
 
-# ── Inicializar banco de dados ───────────────────────────────────────────────
-Write-Step "Inicializando banco de dados..."
-# Usa python -m para contornar problemas de PATH no Windows
-$env:PYTHONPATH = $InstallDir
-& python -m core.cli init-db
-if ($LASTEXITCODE -eq 0) {
-    Write-Ok "Banco de dados inicializado"
-} else {
-    Write-Warn "init-db falhou — execute manualmente no seu projeto:"
-    Write-Host "    python -m core.cli init-db"
-}
-
 # ── Registrar plugin no Claude Code ─────────────────────────────────────────
 if ($claudeOk) {
     Write-Step "Registrando plugin no Claude Code..."
@@ -81,6 +69,8 @@ if ($claudeOk) {
 Write-Host ""
 Write-Host "SDLC Kit instalado com sucesso!" -ForegroundColor Green
 Write-Host ""
-Write-Host "  Em qualquer projeto Git, abra o Claude Code e execute:"
-Write-Host "  /sdlc-kit:init"
+Write-Host "  Proximos passos:"
+Write-Host "  1. Abra o Claude Code em qualquer projeto Git"
+Write-Host "  2. Execute: /sdlc-kit:init"
+Write-Host "     (isso cria o vault .sdlc/ e inicializa tudo automaticamente)"
 Write-Host ""

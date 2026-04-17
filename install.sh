@@ -46,13 +46,6 @@ PY_SCRIPTS=$(python3 -c "import sysconfig; print(sysconfig.get_path('scripts'))"
 [[ -n "$PY_SCRIPTS" && ":$PATH:" != *":$PY_SCRIPTS:"* ]] && export PATH="$PY_SCRIPTS:$PATH"
 success "sdlc-kit instalado"
 
-# ── Inicializar banco de dados ───────────────────────────────────────────────
-info "Inicializando banco de dados..."
-# Usa python3 -m para contornar problemas de PATH
-PYTHONPATH="$INSTALL_DIR" python3 -m core.cli init-db \
-  && success "Banco de dados inicializado" \
-  || warn "init-db falhou — execute manualmente: python3 -m core.cli init-db"
-
 # ── Registrar plugin no Claude Code ─────────────────────────────────────────
 if command -v claude >/dev/null; then
   info "Registrando plugin no Claude Code..."
@@ -65,6 +58,8 @@ fi
 echo ""
 echo -e "${GREEN}${BOLD}SDLC Kit instalado com sucesso!${RESET}"
 echo ""
-echo "  Em qualquer projeto Git, abra o Claude Code e execute:"
-echo -e "  ${BOLD}/sdlc-kit:init${RESET}"
+echo "  Próximos passos:"
+echo -e "  1. Abra o Claude Code em qualquer projeto Git"
+echo -e "  2. Execute: ${BOLD}/sdlc-kit:init${RESET}"
+echo "     (isso cria o vault .sdlc/ e inicializa tudo automaticamente)"
 echo ""
