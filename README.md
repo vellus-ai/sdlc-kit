@@ -50,6 +50,20 @@ O script faz tudo automaticamente: clona o repositório em `~/.claude/plugins/sd
 
 > **Localização customizada:** defina `SDLC_KIT_DIR=/outro/caminho` antes de executar.
 
+### Desinstalação
+
+**Linux / macOS:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/vellus-ai/sdlc-kit/main/uninstall.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm "https://raw.githubusercontent.com/vellus-ai/sdlc-kit/main/uninstall.ps1?v=$(Get-Random)" | iex
+```
+
+O desinstalador remove o registro em `settings.json`, desinstala o pacote Python e apaga os arquivos do plugin. **Os vaults `.sdlc/` nos seus projetos permanecem intactos.**
+
 ---
 
 ### Instalação manual
