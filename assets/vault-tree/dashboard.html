@@ -41,6 +41,56 @@
     .placeholder { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 0.5rem; color: var(--text-sec); }
     .placeholder p { font-size: 1rem; }
     .placeholder small { font-size: 0.82rem; }
+    /* KANBAN */
+    #tab-tasks { flex-direction: column; overflow: hidden; }
+    .tasks-toolbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+    .tasks-toolbar span { font-size: 0.85rem; color: var(--text-sec); }
+    .view-toggle { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 4px 12px; font-size: 0.83rem; cursor: pointer; color: var(--text-sec); }
+    .view-toggle.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    #tasks-view-kanban, #tasks-view-graph { flex: 1; overflow: hidden; }
+    #tasks-view-graph { display: none; }
+    /* KANBAN BOARD */
+    #kanban-board { display: flex; gap: 1rem; padding: 1.25rem 1.5rem; height: 100%; overflow-x: auto; align-items: flex-start; }
+    .kanban-col { background: var(--fm-bg); border: 1px solid var(--border); border-radius: 10px; width: 280px; min-width: 240px; flex-shrink: 0; display: flex; flex-direction: column; max-height: calc(100% - 1rem); }
+    .kanban-col-header { padding: 0.75rem 1rem; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.5rem; }
+    .kanban-col-header .count { background: var(--border); border-radius: 99px; padding: 1px 7px; font-size: 0.75rem; font-weight: 600; color: var(--text-sec); }
+    .kanban-col-body { flex: 1; overflow-y: auto; padding: 0.6rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    .kanban-card { background: var(--white); border: 1px solid var(--border); border-radius: 7px; padding: 0.65rem 0.85rem; font-size: 0.85rem; cursor: default; }
+    .kanban-card:hover { border-color: var(--accent); }
+    .kanban-card .card-title { color: var(--text); line-height: 1.4; margin-bottom: 0.35rem; }
+    .kanban-card .card-meta { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+    .tag-epic { background: #e7f0ff; color: #1648c0; border-radius: 4px; padding: 1px 6px; font-size: 0.75rem; font-weight: 600; }
+    .tag-branch { background: #e6f9f0; color: #157347; border-radius: 4px; padding: 1px 6px; font-size: 0.75rem; font-family: 'Cascadia Code', Consolas, monospace; }
+    .col-backlog .kanban-col-header { color: var(--text-sec); }
+    .col-progress .kanban-col-header { color: #fd7e14; }
+    .col-done .kanban-col-header { color: var(--success); }
+    #kanban-empty { display: none; flex: 1; align-items: center; justify-content: center; flex-direction: column; gap: 0.5rem; color: var(--text-sec); padding: 2rem; text-align: center; }
+    /* BRANCH GRAPH */
+    #branch-graph-wrap { flex: 1; overflow-y: auto; padding: 1.25rem 1.5rem; }
+    .branch-lane { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 1rem; }
+    .branch-name { font-family: 'Cascadia Code', Consolas, monospace; font-size: 0.87rem; color: var(--text); font-weight: 600; flex: 1; }
+    .branch-bar-wrap { flex: 2; }
+    .branch-bar { height: 12px; border-radius: 6px; background: var(--accent); opacity: 0.8; min-width: 8px; }
+    .branch-count { font-size: 0.8rem; color: var(--text-sec); white-space: nowrap; }
+    .branch-pr-hint { font-size: 0.75rem; color: var(--text-sec); font-style: italic; white-space: nowrap; }
+    #graph-empty { display: none; flex: 1; align-items: center; justify-content: center; flex-direction: column; gap: 0.5rem; color: var(--text-sec); padding: 2rem; text-align: center; }
+    /* EPICOS & MILESTONES */
+    #tab-epicos { flex-direction: row; }
+    #epicos-sidebar { width: 220px; min-width: 160px; background: var(--white); border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; }
+    #epicos-sidebar-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.8rem; font-weight: 700; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.05em; }
+    .epicos-nav-item { padding: 8px 1rem; font-size: 0.87rem; color: var(--text-sec); cursor: pointer; border-left: 3px solid transparent; }
+    .epicos-nav-item:hover { background: var(--bg); color: var(--text); }
+    .epicos-nav-item.active { background: #eef2fb; color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+    #epicos-content { flex: 1; overflow-y: auto; padding: 2rem; background: var(--bg); }
+    #epicos-inner { max-width: 720px; margin: 0 auto; }
+    .rag-green { color: #198754; }
+    .rag-amber { color: #fd7e14; }
+    .rag-red { color: var(--danger); }
+    .epic-card, .milestone-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 0.85rem; }
+    .epic-card h3, .milestone-card h3 { font-size: 1rem; margin-bottom: 0.5rem; color: var(--text); }
+    .epic-card .meta, .milestone-card .meta { font-size: 0.83rem; color: var(--text-sec); display: flex; flex-wrap: wrap; gap: 0.75rem; }
+    .progress-bar-wrap { background: var(--fm-bg); border-radius: 4px; height: 6px; margin-top: 0.5rem; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; }
     /* WELCOME SCREEN */
     #welcome { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1.2rem; padding: 2rem; text-align: center; }
     #welcome h2 { font-size: 1.4rem; color: var(--text); }
@@ -134,23 +184,63 @@
   </div>
 
   <div id="tab-tasks" class="tab-panel">
-    <div class="placeholder">
-      <p>Em desenvolvimento — disponível na Fase 3</p>
-      <small>Tasks &amp; Kanban board</small>
+    <div class="tasks-toolbar">
+      <span id="tasks-file-hint">Abra um vault para ver as tasks.</span>
+      <button class="view-toggle active" id="btn-kanban-view" onclick="switchTasksView('kanban')">Kanban</button>
+      <button class="view-toggle" id="btn-graph-view" onclick="switchTasksView('graph')">Branches</button>
+    </div>
+    <div id="tasks-view-kanban">
+      <div id="kanban-board">
+        <div class="kanban-col col-backlog">
+          <div class="kanban-col-header">Backlog <span class="count" id="count-backlog">0</span></div>
+          <div class="kanban-col-body" id="col-backlog-body"></div>
+        </div>
+        <div class="kanban-col col-progress">
+          <div class="kanban-col-header">Em Progresso <span class="count" id="count-progress">0</span></div>
+          <div class="kanban-col-body" id="col-progress-body"></div>
+        </div>
+        <div class="kanban-col col-done">
+          <div class="kanban-col-header">Concluído <span class="count" id="count-done">0</span></div>
+          <div class="kanban-col-body" id="col-done-body"></div>
+        </div>
+      </div>
+      <div id="kanban-empty">
+        <p>Nenhuma task encontrada.</p>
+        <small>Execute <code>/sdlc-kit:task</code> para adicionar tasks ao vault.</small>
+      </div>
+    </div>
+    <div id="tasks-view-graph" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
+      <div id="branch-graph-wrap">
+        <div id="graph-empty" style="display:flex;">
+          <p>Nenhuma branch referenciada nas tasks.</p>
+          <small>Adicione tasks com <code>@branch-name</code> para ver o gráfico.</small>
+        </div>
+      </div>
     </div>
   </div>
 
   <div id="tab-epicos" class="tab-panel">
-    <div class="placeholder">
-      <p>Em desenvolvimento — disponível na Fase 3</p>
-      <small>Épicos &amp; Milestones</small>
+    <div id="epicos-sidebar">
+      <div id="epicos-sidebar-header">Visão</div>
+      <div class="epicos-nav-item active" data-epicos-view="epics" onclick="switchEpicosView('epics')">Épicos</div>
+      <div class="epicos-nav-item" data-epicos-view="milestones" onclick="switchEpicosView('milestones')">Milestones</div>
+    </div>
+    <div id="epicos-content">
+      <div id="epicos-inner">
+        <div id="epicos-view-epics">
+          <p style="color:var(--text-sec); font-size:0.95rem;">Abra um vault para visualizar os épicos.</p>
+        </div>
+        <div id="epicos-view-milestones" style="display:none;">
+          <p style="color:var(--text-sec); font-size:0.95rem;">Abra um vault para visualizar os milestones.</p>
+        </div>
+      </div>
     </div>
   </div>
 
   <div id="tab-dominio" class="tab-panel">
     <div class="placeholder">
-      <p>Em desenvolvimento — disponível na Fase 3</p>
-      <small>Glossário e modelo de domínio</small>
+      <p>Glossário e modelo de domínio</p>
+      <small>Disponível em uma próxima fase.</small>
     </div>
   </div>
 </main>
@@ -241,6 +331,9 @@ async function loadVault(handle) {
   await renderSidebar(handle);
   await updateProjectName(handle);
   showVaultUI();
+  // Pre-load delivery data
+  await renderKanban();
+  await renderEpicosTab();
 }
 
 /* =========================================================
@@ -562,8 +655,470 @@ function switchTab(tabId) {
    TAB CLICK HANDLER
    ========================================================= */
 document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  btn.addEventListener('click', () => {
+    switchTab(btn.dataset.tab);
+    if (btn.dataset.tab === 'tab-tasks' && rootHandle) renderKanban();
+    if (btn.dataset.tab === 'tab-epicos' && rootHandle) renderEpicosTab();
+  });
 });
+
+/* =========================================================
+   TASKS PARSING HELPERS
+   ========================================================= */
+
+/**
+ * Parse a TASKS.md line into { title, epic, branch, done, inProgress }.
+ * Format: - [ ] [EPIC] Task title #phase @branch
+ *         - [x] Completed task
+ *         - [-] In-progress task   (convention: - [-] means in-progress)
+ */
+function parseTaskLine(line) {
+  const doneMatch = line.match(/^- \[([x\-])\] (.*)/i);
+  if (!doneMatch) return null;
+  const checkChar = doneMatch[1].toLowerCase();
+  const rest = doneMatch[2];
+  const done = checkChar === 'x';
+  const inProgress = checkChar === '-';
+
+  // Extract [EPIC] prefix
+  let epic = '';
+  let body = rest;
+  const epicMatch = rest.match(/^\[([^\]]+)\]\s*(.*)/);
+  if (epicMatch) { epic = epicMatch[1]; body = epicMatch[2]; }
+
+  // Extract @branch suffix
+  let branch = '';
+  const branchMatch = body.match(/@([\w/._-]+)/);
+  if (branchMatch) { branch = branchMatch[1]; body = body.replace(branchMatch[0], '').trim(); }
+
+  // Remove #phase tag
+  const title = body.replace(/#\S+/g, '').trim();
+
+  return { title, epic, branch, done, inProgress };
+}
+
+async function readFileFromVault(pathParts) {
+  // pathParts: array of directory/file names from vault root
+  // e.g. ['03-development', 'TASKS.md']
+  if (!rootHandle) return null;
+  try {
+    let handle = rootHandle;
+    for (let i = 0; i < pathParts.length - 1; i++) {
+      handle = await handle.getDirectoryHandle(pathParts[i]);
+    }
+    const fileHandle = await handle.getFileHandle(pathParts[pathParts.length - 1]);
+    const file = await fileHandle.getFile();
+    return await file.text();
+  } catch (_) {
+    return null;
+  }
+}
+
+/* =========================================================
+   KANBAN BOARD
+   ========================================================= */
+async function renderKanban() {
+  const hint = document.getElementById('tasks-file-hint');
+  const board = document.getElementById('kanban-board');
+  const empty = document.getElementById('kanban-empty');
+  const backlogBody = document.getElementById('col-backlog-body');
+  const progressBody = document.getElementById('col-progress-body');
+  const doneBody = document.getElementById('col-done-body');
+
+  backlogBody.innerHTML = '';
+  progressBody.innerHTML = '';
+  doneBody.innerHTML = '';
+
+  if (!rootHandle) { hint.textContent = 'Abra um vault para ver as tasks.'; return; }
+
+  const text = await readFileFromVault(['03-development', 'TASKS.md']);
+  if (!text) {
+    hint.textContent = 'TASKS.md não encontrado. Execute /sdlc-kit:task para criar.';
+    board.style.display = 'none';
+    empty.style.display = 'flex';
+    return;
+  }
+
+  hint.textContent = '03-development/TASKS.md';
+  const tasks = text.split('\n').map(parseTaskLine).filter(Boolean);
+
+  if (tasks.length === 0) {
+    board.style.display = 'none';
+    empty.style.display = 'flex';
+    return;
+  }
+
+  board.style.display = 'flex';
+  empty.style.display = 'none';
+
+  let backlogCount = 0, progressCount = 0, doneCount = 0;
+
+  for (const task of tasks) {
+    const card = buildKanbanCard(task);
+    if (task.done) {
+      doneBody.appendChild(card);
+      doneCount++;
+    } else if (task.inProgress) {
+      progressBody.appendChild(card);
+      progressCount++;
+    } else {
+      backlogBody.appendChild(card);
+      backlogCount++;
+    }
+  }
+
+  document.getElementById('count-backlog').textContent = backlogCount;
+  document.getElementById('count-progress').textContent = progressCount;
+  document.getElementById('count-done').textContent = doneCount;
+
+  // Also render branch graph data
+  renderBranchGraph(tasks);
+}
+
+function buildKanbanCard(task) {
+  const card = document.createElement('div');
+  card.className = 'kanban-card';
+
+  const titleEl = document.createElement('div');
+  titleEl.className = 'card-title';
+  titleEl.textContent = task.title || '(sem título)';
+  card.appendChild(titleEl);
+
+  const meta = document.createElement('div');
+  meta.className = 'card-meta';
+
+  if (task.epic) {
+    const epicTag = document.createElement('span');
+    epicTag.className = 'tag-epic';
+    epicTag.textContent = task.epic;
+    meta.appendChild(epicTag);
+  }
+  if (task.branch) {
+    const branchTag = document.createElement('span');
+    branchTag.className = 'tag-branch';
+    branchTag.textContent = task.branch;
+    meta.appendChild(branchTag);
+  }
+
+  if (meta.children.length > 0) card.appendChild(meta);
+  return card;
+}
+
+/* =========================================================
+   BRANCH GRAPH
+   ========================================================= */
+function renderBranchGraph(tasks) {
+  const wrap = document.getElementById('branch-graph-wrap');
+  const graphEmpty = document.getElementById('graph-empty');
+
+  // Remove existing lanes (but keep graph-empty)
+  Array.from(wrap.children).forEach(el => {
+    if (el.id !== 'graph-empty') el.remove();
+  });
+
+  // Aggregate by branch
+  const branchMap = {};
+  for (const task of tasks) {
+    if (!task.branch) continue;
+    if (!branchMap[task.branch]) branchMap[task.branch] = 0;
+    branchMap[task.branch]++;
+  }
+
+  const branches = Object.keys(branchMap).sort();
+  if (branches.length === 0) {
+    graphEmpty.style.display = 'flex';
+    return;
+  }
+  graphEmpty.style.display = 'none';
+
+  const maxCount = Math.max(...Object.values(branchMap));
+
+  for (const branch of branches) {
+    const count = branchMap[branch];
+    const lane = document.createElement('div');
+    lane.className = 'branch-lane';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'branch-name';
+    nameEl.textContent = branch;
+
+    const barWrap = document.createElement('div');
+    barWrap.className = 'branch-bar-wrap';
+    const bar = document.createElement('div');
+    bar.className = 'branch-bar';
+    bar.style.width = Math.max(8, Math.round((count / maxCount) * 180)) + 'px';
+    barWrap.appendChild(bar);
+
+    const countEl = document.createElement('div');
+    countEl.className = 'branch-count';
+    countEl.textContent = count + (count === 1 ? ' task' : ' tasks');
+
+    const prHint = document.createElement('div');
+    prHint.className = 'branch-pr-hint';
+    prHint.textContent = 'PR status disponível após sync';
+
+    lane.appendChild(nameEl);
+    lane.appendChild(barWrap);
+    lane.appendChild(countEl);
+    lane.appendChild(prHint);
+    wrap.insertBefore(lane, graphEmpty);
+  }
+}
+
+function switchTasksView(view) {
+  const kanban = document.getElementById('tasks-view-kanban');
+  const graph = document.getElementById('tasks-view-graph');
+  const btnK = document.getElementById('btn-kanban-view');
+  const btnG = document.getElementById('btn-graph-view');
+  if (view === 'kanban') {
+    kanban.style.display = '';
+    graph.style.display = 'none';
+    btnK.classList.add('active');
+    btnG.classList.remove('active');
+  } else {
+    kanban.style.display = 'none';
+    graph.style.display = 'flex';
+    btnK.classList.remove('active');
+    btnG.classList.add('active');
+  }
+}
+
+/* =========================================================
+   EPICOS & MILESTONES TAB
+   ========================================================= */
+let epicosCurrentView = 'epics';
+
+function switchEpicosView(view) {
+  epicosCurrentView = view;
+  document.querySelectorAll('.epicos-nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.epicosView === view);
+  });
+  document.getElementById('epicos-view-epics').style.display = view === 'epics' ? '' : 'none';
+  document.getElementById('epicos-view-milestones').style.display = view === 'milestones' ? '' : 'none';
+}
+
+async function renderEpicosTab() {
+  await renderEpics();
+  await renderMilestones();
+}
+
+async function renderEpics() {
+  const container = document.getElementById('epicos-view-epics');
+  container.innerHTML = '';
+
+  if (!rootHandle) {
+    container.innerHTML = '<p style="color:var(--text-sec)">Abra um vault para visualizar os épicos.</p>';
+    return;
+  }
+
+  const text = await readFileFromVault(['03-development', 'EPICS.md']);
+  if (!text) {
+    container.innerHTML = '<p style="color:var(--text-sec); font-size:0.92rem;">Nenhum épico criado ainda. Execute <code>/sdlc-kit:epic</code> para começar.</p>';
+    return;
+  }
+
+  const { frontmatter, body } = parseFrontmatter(text);
+  const epics = parseEpicSections(body);
+
+  if (epics.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-sec); font-size:0.92rem;">Nenhum épico criado ainda. Execute <code>/sdlc-kit:epic</code> para começar.</p>';
+    return;
+  }
+
+  const title = document.createElement('h2');
+  title.style.cssText = 'font-size:1.2rem;margin-bottom:1rem;color:var(--text);';
+  title.textContent = 'Épicos';
+  container.appendChild(title);
+
+  for (const epic of epics) {
+    const card = document.createElement('div');
+    card.className = 'epic-card';
+
+    const h3 = document.createElement('h3');
+    h3.textContent = epic.name;
+    card.appendChild(h3);
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+
+    if (epic.milestone) {
+      const ms = document.createElement('span');
+      ms.textContent = 'Milestone: ' + epic.milestone;
+      meta.appendChild(ms);
+    }
+    if (epic.created) {
+      const cr = document.createElement('span');
+      cr.textContent = 'Criado: ' + epic.created;
+      meta.appendChild(cr);
+    }
+    const pct = parseInt(epic.progress) || 0;
+    const prog = document.createElement('span');
+    prog.textContent = 'Progresso: ' + pct + '%';
+    meta.appendChild(prog);
+
+    card.appendChild(meta);
+
+    if (epic.description) {
+      const desc = document.createElement('p');
+      desc.style.cssText = 'font-size:0.85rem;color:var(--text-sec);margin-top:0.5rem;';
+      desc.textContent = epic.description;
+      card.appendChild(desc);
+    }
+
+    const barWrap = document.createElement('div');
+    barWrap.className = 'progress-bar-wrap';
+    const barFill = document.createElement('div');
+    barFill.className = 'progress-bar-fill';
+    barFill.style.width = pct + '%';
+    barWrap.appendChild(barFill);
+    card.appendChild(barWrap);
+
+    container.appendChild(card);
+  }
+}
+
+async function renderMilestones() {
+  const container = document.getElementById('epicos-view-milestones');
+  container.innerHTML = '';
+
+  if (!rootHandle) {
+    container.innerHTML = '<p style="color:var(--text-sec)">Abra um vault para visualizar os milestones.</p>';
+    return;
+  }
+
+  const text = await readFileFromVault(['03-development', 'MILESTONES.md']);
+  if (!text) {
+    container.innerHTML = '<p style="color:var(--text-sec); font-size:0.92rem;">Nenhum milestone criado ainda. Execute <code>/sdlc-kit:milestone</code> para começar.</p>';
+    return;
+  }
+
+  const { frontmatter, body } = parseFrontmatter(text);
+  const milestones = parseMilestoneSections(body);
+
+  if (milestones.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-sec); font-size:0.92rem;">Nenhum milestone criado ainda. Execute <code>/sdlc-kit:milestone</code> para começar.</p>';
+    return;
+  }
+
+  const title = document.createElement('h2');
+  title.style.cssText = 'font-size:1.2rem;margin-bottom:1rem;color:var(--text);';
+  title.textContent = 'Milestones';
+  container.appendChild(title);
+
+  for (const ms of milestones) {
+    const card = document.createElement('div');
+    card.className = 'milestone-card';
+
+    const h3 = document.createElement('h3');
+    const ragSpan = document.createElement('span');
+    ragSpan.style.marginRight = '0.5rem';
+    ragSpan.textContent = ragToEmoji(ms.rag);
+    h3.appendChild(ragSpan);
+    h3.appendChild(document.createTextNode(ms.name));
+    card.appendChild(h3);
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+
+    if (ms.targetDate) {
+      const dt = document.createElement('span');
+      dt.textContent = 'Data-alvo: ' + ms.targetDate;
+      meta.appendChild(dt);
+    }
+    if (ms.epics) {
+      const ep = document.createElement('span');
+      ep.textContent = 'Épicos: ' + ms.epics;
+      meta.appendChild(ep);
+    }
+    const pct = parseInt(ms.progress) || 0;
+    const prog = document.createElement('span');
+    const ragClass = ragToClass(ms.rag);
+    if (ragClass) prog.classList.add(ragClass);
+    prog.textContent = 'Progresso: ' + pct + '%';
+    meta.appendChild(prog);
+
+    card.appendChild(meta);
+
+    const barWrap = document.createElement('div');
+    barWrap.className = 'progress-bar-wrap';
+    const barFill = document.createElement('div');
+    barFill.className = 'progress-bar-fill';
+    barFill.style.width = pct + '%';
+    if (ms.rag === 'red') barFill.style.background = 'var(--danger)';
+    else if (ms.rag === 'amber') barFill.style.background = '#fd7e14';
+    else barFill.style.background = 'var(--success)';
+    barWrap.appendChild(barFill);
+    card.appendChild(barWrap);
+
+    container.appendChild(card);
+  }
+}
+
+/* =========================================================
+   EPICS/MILESTONES SECTION PARSERS
+   ========================================================= */
+function parseEpicSections(body) {
+  const epics = [];
+  const lines = body.split('\n');
+  let current = null;
+  for (const line of lines) {
+    if (line.startsWith('## ') && !line.startsWith('## Épicos')) {
+      if (current) epics.push(current);
+      current = { name: line.slice(3).trim(), milestone: '', description: '', created: '', progress: '0' };
+    } else if (current) {
+      const milMatch = line.match(/\*\*Milestone:\*\*\s*(.*)/);
+      if (milMatch) current.milestone = milMatch[1].trim();
+      const descMatch = line.match(/\*\*Descrição:\*\*\s*(.*)/);
+      if (descMatch) current.description = descMatch[1].trim();
+      const crMatch = line.match(/\*\*Criado:\*\*\s*(.*)/);
+      if (crMatch) current.created = crMatch[1].trim();
+      const progMatch = line.match(/\*\*Progresso:\*\*\s*(\d+)%/);
+      if (progMatch) current.progress = progMatch[1];
+    }
+  }
+  if (current) epics.push(current);
+  return epics;
+}
+
+function parseMilestoneSections(body) {
+  const milestones = [];
+  const lines = body.split('\n');
+  let current = null;
+  for (const line of lines) {
+    if (line.startsWith('## ') && !line.startsWith('## Milestones')) {
+      if (current) milestones.push(current);
+      current = { name: line.slice(3).trim(), rag: 'amber', targetDate: '', epics: '', progress: '0' };
+    } else if (current) {
+      const statusMatch = line.match(/\*\*Status:\*\*\s*(.*)/);
+      if (statusMatch) {
+        const st = statusMatch[1].toLowerCase();
+        if (st.includes('green') || st.includes('🟢')) current.rag = 'green';
+        else if (st.includes('red') || st.includes('🔴')) current.rag = 'red';
+        else current.rag = 'amber';
+      }
+      const dtMatch = line.match(/\*\*Data-alvo:\*\*\s*(.*)/);
+      if (dtMatch) current.targetDate = dtMatch[1].trim();
+      const epMatch = line.match(/\*\*Épicos:\*\*\s*(.*)/);
+      if (epMatch) current.epics = epMatch[1].trim();
+      const progMatch = line.match(/\*\*Progresso:\*\*\s*(\d+)%/);
+      if (progMatch) current.progress = progMatch[1];
+    }
+  }
+  if (current) milestones.push(current);
+  return milestones;
+}
+
+function ragToEmoji(rag) {
+  if (rag === 'green') return '🟢';
+  if (rag === 'red') return '🔴';
+  return '🟡';
+}
+
+function ragToClass(rag) {
+  if (rag === 'green') return 'rag-green';
+  if (rag === 'red') return 'rag-red';
+  return 'rag-amber';
+}
 
 /* =========================================================
    INIT — check IndexedDB for saved handle
