@@ -30,6 +30,11 @@ command -v claude >/dev/null || warn "claude CLI não encontrado — instale o C
 if [[ -d "$INSTALL_DIR/.git" ]]; then
   info "Atualizando instalação existente em $INSTALL_DIR..."
   git -C "$INSTALL_DIR" pull --ff-only
+  success "Repositório em $INSTALL_DIR"
+  # Re-executa o script local atualizado — curl|bash executa o conteúdo em memória,
+  # então após o git pull o script local pode ser mais novo que o que está rodando.
+  info "Reexecutando script atualizado..."
+  exec bash "$INSTALL_DIR/install.sh"
 else
   info "Clonando repositório em $INSTALL_DIR..."
   git clone --depth 1 "$REPO" "$INSTALL_DIR"
@@ -38,8 +43,8 @@ success "Repositório em $INSTALL_DIR"
 
 # ── Instalar pacote Python ───────────────────────────────────────────────────
 info "Instalando pacote Python..."
-python3 -m pip install -e "$INSTALL_DIR" --quiet
-python3 -m pip install "pyyaml>=6" --quiet 2>/dev/null && success "pyyaml instalado" || warn "pyyaml não instalado (opcional)"
+python3 -m pip install -e "$INSTALL_DIR" --quiet --no-warn-script-location
+python3 -m pip install "pyyaml>=6" --quiet --no-warn-script-location 2>/dev/null && success "pyyaml instalado" || warn "pyyaml não instalado (opcional)"
 
 # Adicionar diretório de scripts Python ao PATH desta sessão
 PY_SCRIPTS=$(python3 -c "import sysconfig; print(sysconfig.get_path('scripts'))" 2>/dev/null || true)

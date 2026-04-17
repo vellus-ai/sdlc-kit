@@ -34,6 +34,12 @@ if (-not $claudeOk) { Write-Warn "claude CLI não encontrado — instale o Claud
 if (Test-Path "$InstallDir\.git") {
     Write-Step "Atualizando instalação existente em $InstallDir..."
     git -C $InstallDir pull --ff-only
+    Write-Ok "Repositório em $InstallDir"
+    # Re-executa o script local atualizado para garantir que as etapas seguintes
+    # usem a versão mais recente (irm | iex executa a versão em memória, não o arquivo local).
+    Write-Step "Reexecutando script atualizado..."
+    & powershell -NoProfile -ExecutionPolicy Bypass -File "$InstallDir\install.ps1"
+    exit $LASTEXITCODE
 } else {
     Write-Step "Clonando repositório em $InstallDir..."
     New-Item -ItemType Directory -Force -Path (Split-Path $InstallDir) | Out-Null
@@ -43,8 +49,8 @@ Write-Ok "Repositório em $InstallDir"
 
 # ── Instalar pacote Python ───────────────────────────────────────────────────
 Write-Step "Instalando pacote Python..."
-& python -m pip install -e $InstallDir --quiet
-& python -m pip install "pyyaml>=6" --quiet 2>$null
+& python -m pip install -e $InstallDir --quiet --no-warn-script-location
+& python -m pip install "pyyaml>=6" --quiet --no-warn-script-location 2>$null
 if ($LASTEXITCODE -eq 0) { Write-Ok "pyyaml instalado" } else { Write-Warn "pyyaml não instalado (opcional)" }
 
 # Adicionar o diretório de scripts Python ao PATH desta sessão (evita "não reconhecido")
