@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDLC Kit Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f8f9fa;
+      --white: #ffffff;
+      --text: #212529;
+      --text-sec: #495057;
+      --accent: #1a56db;
+      --border: #dee2e6;
+      --tab-inactive: #6c757d;
+      --fm-bg: #f1f3f5;
+      --code-bg: #f8f9fa;
+      --danger: #dc3545;
+      --success: #198754;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
+    /* TOP BAR */
+    header { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 1.5rem; height: 52px; display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+    #project-name { font-weight: 700; font-size: 1.05rem; color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #health-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
+    #health-dot.warn { background: #fd7e14; }
+    #health-dot.err { background: var(--danger); }
+    #btn-open { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 6px 16px; font-size: 0.9rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    #btn-open:hover { background: #1648c0; }
+    /* TABS NAV */
+    nav { background: var(--white); border-bottom: 1px solid var(--border); display: flex; padding: 0 1.5rem; flex-shrink: 0; }
+    .tab-btn { background: none; border: none; border-bottom: 3px solid transparent; padding: 10px 18px; font-size: 0.92rem; font-weight: 500; color: var(--tab-inactive); cursor: pointer; margin-bottom: -1px; }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+    /* MAIN AREA */
+    main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .tab-panel { display: none; flex: 1; overflow: hidden; }
+    .tab-panel.active { display: flex; }
+    /* PLACEHOLDER PANELS */
+    .placeholder { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 0.5rem; color: var(--text-sec); }
+    .placeholder p { font-size: 1rem; }
+    .placeholder small { font-size: 0.82rem; }
+    /* WELCOME SCREEN */
+    #welcome { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1.2rem; padding: 2rem; text-align: center; }
+    #welcome h2 { font-size: 1.4rem; color: var(--text); }
+    #welcome p { color: var(--text-sec); max-width: 420px; line-height: 1.6; }
+    #btn-open-big { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 12px 28px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+    #btn-open-big:hover { background: #1648c0; }
+    #btn-reconnect { background: var(--white); color: var(--accent); border: 2px solid var(--accent); border-radius: 8px; padding: 10px 24px; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
+    #btn-reconnect:hover { background: #eef2fb; }
+    #reconnect-path { font-size: 0.82rem; color: var(--text-sec); max-width: 380px; word-break: break-all; }
+    /* DOCUMENTOS LAYOUT */
+    #tab-documentos { flex-direction: row; }
+    #sidebar { width: 260px; min-width: 180px; max-width: 380px; background: var(--white); border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; }
+    #sidebar-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.8rem; font-weight: 700; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.05em; }
+    #file-tree { flex: 1; overflow-y: auto; padding: 0.5rem 0; }
+    .tree-group { margin-bottom: 0.25rem; }
+    .tree-group-label { padding: 4px 1rem; font-size: 0.78rem; font-weight: 700; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.4rem; cursor: pointer; user-select: none; }
+    .tree-group-label:hover { background: var(--bg); }
+    .tree-group-label::before { content: '▾'; font-size: 0.7rem; transition: transform 0.15s; }
+    .tree-group-label.collapsed::before { transform: rotate(-90deg); }
+    .tree-files { }
+    .tree-files.collapsed { display: none; }
+    .tree-file { padding: 5px 1rem 5px 2rem; font-size: 0.85rem; color: var(--text-sec); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 4px; margin: 1px 4px; }
+    .tree-file:hover { background: var(--bg); color: var(--text); }
+    .tree-file.active { background: #eef2fb; color: var(--accent); font-weight: 600; }
+    /* CONTENT PANEL */
+    #content { flex: 1; overflow-y: auto; padding: 2rem; background: var(--bg); }
+    #content-inner { max-width: 760px; margin: 0 auto; }
+    /* FRONTMATTER CARD */
+    .fm-card { background: var(--fm-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; font-size: 0.85rem; }
+    .fm-card table { border-collapse: collapse; width: 100%; }
+    .fm-card td { padding: 2px 8px 2px 0; vertical-align: top; color: var(--text); }
+    .fm-card td:first-child { font-weight: 600; color: var(--text-sec); white-space: nowrap; width: 1%; padding-right: 12px; }
+    /* MARKDOWN RENDERED */
+    .md-body { line-height: 1.7; color: var(--text); }
+    .md-body h1 { font-size: 1.7rem; margin: 1.4rem 0 0.7rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+    .md-body h2 { font-size: 1.3rem; margin: 1.2rem 0 0.6rem; }
+    .md-body h3 { font-size: 1.1rem; margin: 1rem 0 0.5rem; }
+    .md-body p { margin: 0.65rem 0; }
+    .md-body ul, .md-body ol { margin: 0.65rem 0 0.65rem 1.5rem; }
+    .md-body li { margin: 0.25rem 0; }
+    .md-body blockquote { border-left: 4px solid var(--border); padding: 0.4rem 1rem; margin: 0.8rem 0; color: var(--text-sec); background: var(--fm-bg); border-radius: 0 4px 4px 0; }
+    .md-body code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 3px; padding: 0.1em 0.4em; font-size: 0.88em; font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; color: #c7254e; }
+    .md-body pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; overflow-x: auto; margin: 0.8rem 0; }
+    .md-body pre code { background: none; border: none; padding: 0; color: var(--text); font-size: 0.87rem; }
+    .md-body hr { border: none; border-top: 1px solid var(--border); margin: 1.2rem 0; }
+    .md-body table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.9rem; }
+    .md-body th, .md-body td { border: 1px solid var(--border); padding: 6px 12px; text-align: left; }
+    .md-body th { background: var(--fm-bg); font-weight: 600; }
+    .md-body a { color: var(--accent); text-decoration: underline; }
+    .wikilink { color: var(--accent); cursor: pointer; text-decoration: underline; background: none; border: none; padding: 0; font: inherit; }
+    .wikilink:hover { color: #1648c0; }
+    #no-file { color: var(--text-sec); font-size: 0.95rem; padding: 2rem 0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span id="project-name">SDLC Vault</span>
+  <span id="health-dot" title="Vault OK"></span>
+  <button id="btn-open" onclick="openVault()">Abrir Vault</button>
+</header>
+
+<nav>
+  <button class="tab-btn active" data-tab="tab-documentos">Documentos</button>
+  <button class="tab-btn" data-tab="tab-tasks">Tasks</button>
+  <button class="tab-btn" data-tab="tab-epicos">Épicos &amp; Milestones</button>
+  <button class="tab-btn" data-tab="tab-dominio">Domínio</button>
+</nav>
+
+<main>
+  <div id="tab-documentos" class="tab-panel active">
+    <div id="welcome">
+      <h2>Bem-vindo ao SDLC Kit Dashboard</h2>
+      <p>Selecione a pasta <code>.sdlc/</code> do seu projeto para visualizar e navegar pela documentação do vault.</p>
+      <button id="btn-open-big" onclick="openVault()">Abrir Vault</button>
+      <div id="reconnect-area" style="display:none; flex-direction:column; align-items:center; gap:0.5rem;">
+        <button id="btn-reconnect" onclick="reconnectVault()">Reconectar ao vault</button>
+        <span id="reconnect-path"></span>
+        <button id="btn-open-big-alt" onclick="openVault()" style="background:none;border:none;color:var(--accent);font-size:0.85rem;cursor:pointer;text-decoration:underline;">Escolher outra pasta</button>
+      </div>
+    </div>
+    <div id="sidebar" style="display:none;">
+      <div id="sidebar-header">Arquivos</div>
+      <div id="file-tree"></div>
+    </div>
+    <div id="content" style="display:none;">
+      <div id="content-inner">
+        <p id="no-file">Selecione um arquivo no painel lateral.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-tasks" class="tab-panel">
+    <div class="placeholder">
+      <p>Em desenvolvimento — disponível na Fase 3</p>
+      <small>Tasks &amp; Kanban board</small>
+    </div>
+  </div>
+
+  <div id="tab-epicos" class="tab-panel">
+    <div class="placeholder">
+      <p>Em desenvolvimento — disponível na Fase 3</p>
+      <small>Épicos &amp; Milestones</small>
+    </div>
+  </div>
+
+  <div id="tab-dominio" class="tab-panel">
+    <div class="placeholder">
+      <p>Em desenvolvimento — disponível na Fase 3</p>
+      <small>Glossário e modelo de domínio</small>
+    </div>
+  </div>
+</main>
+
+<script>
+/* =========================================================
+   STATE
+   ========================================================= */
+let rootHandle = null;
+let fileIndex = {}; // stem -> { handle, path, groupName }
+let activeFilePath = null;
+
+/* =========================================================
+   INDEXEDDB — persist directory handle
+   ========================================================= */
+const DB_NAME = 'sdlc-dashboard';
+const DB_STORE = 'handles';
+const DB_KEY = 'root';
+
+function openDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(DB_STORE);
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function saveHandle(handle) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    tx.objectStore(DB_STORE).put(handle, DB_KEY);
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+async function loadHandle() {
+  try {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(DB_STORE, 'readonly');
+      const req = tx.objectStore(DB_STORE).get(DB_KEY);
+      req.onsuccess = e => resolve(e.target.result || null);
+      req.onerror = e => reject(e.target.error);
+    });
+  } catch (_) { return null; }
+}
+
+/* =========================================================
+   VAULT OPEN / RECONNECT
+   ========================================================= */
+async function openVault() {
+  if (!window.showDirectoryPicker) {
+    alert('Este navegador não suporta a File System Access API. Use Chrome ou Edge atualizado.');
+    return;
+  }
+  try {
+    const handle = await window.showDirectoryPicker({ mode: 'read' });
+    rootHandle = handle;
+    await saveHandle(handle);
+    await loadVault(handle);
+  } catch (err) {
+    if (err.name !== 'AbortError') console.error('openVault error:', err);
+  }
+}
+
+async function reconnectVault() {
+  if (!rootHandle) return;
+  try {
+    const perm = await rootHandle.queryPermission({ mode: 'read' });
+    if (perm === 'granted') {
+      await loadVault(rootHandle);
+    } else {
+      const req = await rootHandle.requestPermission({ mode: 'read' });
+      if (req === 'granted') await loadVault(rootHandle);
+    }
+  } catch (err) {
+    console.error('reconnect error:', err);
+  }
+}
+
+async function loadVault(handle) {
+  rootHandle = handle;
+  fileIndex = {};
+  await buildFileIndex(handle);
+  await renderSidebar(handle);
+  await updateProjectName(handle);
+  showVaultUI();
+}
+
+/* =========================================================
+   FILE INDEX
+   ========================================================= */
+async function buildFileIndex(dirHandle, prefix) {
+  for await (const [name, entry] of dirHandle.entries()) {
+    if (entry.kind === 'directory') {
+      await buildFileIndex(entry, name);
+    } else if (name.endsWith('.md')) {
+      const stem = name.replace(/\.md$/, '');
+      const path = prefix ? `${prefix}/${name}` : name;
+      const groupName = prefix || '';
+      const normStem = normalizeStem(stem);
+      fileIndex[normStem] = { handle: entry, path, groupName, stem, name };
+    }
+  }
+}
+
+function normalizeStem(s) {
+  return s.toLowerCase().replace(/[\s_-]+/g, '_');
+}
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+async function renderSidebar(dirHandle) {
+  const tree = document.getElementById('file-tree');
+  tree.innerHTML = '';
+
+  // Group files by folder
+  const groups = {};
+  for (const [, info] of Object.entries(fileIndex)) {
+    const g = info.groupName || '(raiz)';
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(info);
+  }
+
+  const sorted = Object.keys(groups).sort();
+
+  for (const gName of sorted) {
+    const files = groups[gName].sort((a, b) => a.name.localeCompare(b.name));
+    const groupEl = document.createElement('div');
+    groupEl.className = 'tree-group';
+
+    const label = document.createElement('div');
+    label.className = 'tree-group-label';
+    label.textContent = gName;
+    label.onclick = () => {
+      label.classList.toggle('collapsed');
+      filesEl.classList.toggle('collapsed');
+    };
+
+    const filesEl = document.createElement('div');
+    filesEl.className = 'tree-files';
+
+    for (const info of files) {
+      const fileEl = document.createElement('div');
+      fileEl.className = 'tree-file';
+      fileEl.textContent = info.stem;
+      fileEl.dataset.path = info.path;
+      fileEl.onclick = () => loadFile(info);
+      filesEl.appendChild(fileEl);
+    }
+
+    groupEl.appendChild(label);
+    groupEl.appendChild(filesEl);
+    tree.appendChild(groupEl);
+  }
+}
+
+/* =========================================================
+   PROJECT NAME from CLAUDE.md
+   ========================================================= */
+async function updateProjectName(dirHandle) {
+  try {
+    let claudeHandle = null;
+    for await (const [name, entry] of dirHandle.entries()) {
+      if (name === 'CLAUDE.md' && entry.kind === 'file') { claudeHandle = entry; break; }
+    }
+    if (!claudeHandle) return;
+    const file = await claudeHandle.getFile();
+    const text = await file.text();
+    const match = text.match(/^#\s+(.+)/m) || text.match(/project[_\s-]*name[:\s]+(.+)/im);
+    if (match) document.getElementById('project-name').textContent = match[1].trim();
+  } catch (_) {}
+}
+
+/* =========================================================
+   LOAD & RENDER FILE
+   ========================================================= */
+async function loadFile(info) {
+  activeFilePath = info.path;
+  // Update sidebar active state
+  document.querySelectorAll('.tree-file').forEach(el => {
+    el.classList.toggle('active', el.dataset.path === info.path);
+  });
+
+  try {
+    const file = await info.handle.getFile();
+    const raw = await file.text();
+    renderDocument(raw);
+  } catch (err) {
+    document.getElementById('content-inner').innerHTML = `<p style="color:var(--danger)">Erro ao ler arquivo: ${escHtml(err.message)}</p>`;
+  }
+}
+
+function renderDocument(raw) {
+  const { frontmatter, body } = parseFrontmatter(raw);
+  const inner = document.getElementById('content-inner');
+  inner.innerHTML = '';
+
+  if (frontmatter && Object.keys(frontmatter).length > 0) {
+    const card = document.createElement('div');
+    card.className = 'fm-card';
+    const tbl = document.createElement('table');
+    for (const [k, v] of Object.entries(frontmatter)) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escHtml(k)}</td><td>${escHtml(String(v))}</td>`;
+      tbl.appendChild(tr);
+    }
+    card.appendChild(tbl);
+    inner.appendChild(card);
+  }
+
+  const mdDiv = document.createElement('div');
+  mdDiv.className = 'md-body';
+  mdDiv.innerHTML = parseMarkdown(body);
+  inner.appendChild(mdDiv);
+
+  // Wire wikilinks
+  inner.querySelectorAll('.wikilink').forEach(btn => {
+    btn.onclick = () => navigateWikilink(btn.dataset.target);
+  });
+}
+
+function navigateWikilink(target) {
+  const norm = normalizeStem(target);
+  const info = fileIndex[norm];
+  if (info) {
+    loadFile(info);
+    // Switch to documentos tab if not already
+    switchTab('tab-documentos');
+  } else {
+    alert(`Arquivo não encontrado: [[${target}]]`);
+  }
+}
+
+/* =========================================================
+   FRONTMATTER PARSER
+   ========================================================= */
+function parseFrontmatter(raw) {
+  if (!raw.startsWith('---')) return { frontmatter: null, body: raw };
+  const end = raw.indexOf('\n---', 3);
+  if (end === -1) return { frontmatter: null, body: raw };
+  const yamlStr = raw.slice(4, end);
+  const body = raw.slice(end + 4).replace(/^\n/, '');
+  const fm = {};
+  for (const line of yamlStr.split('\n')) {
+    const idx = line.indexOf(':');
+    if (idx > 0) {
+      const k = line.slice(0, idx).trim();
+      const v = line.slice(idx + 1).trim().replace(/^["']|["']$/g, '');
+      if (k) fm[k] = v;
+    }
+  }
+  return { frontmatter: fm, body };
+}
+
+/* =========================================================
+   MARKDOWN PARSER (~100 lines)
+   ========================================================= */
+function parseMarkdown(md) {
+  const lines = md.split('\n');
+  const out = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Fenced code block
+    if (line.trimStart().startsWith('```')) {
+      const lang = line.trimStart().slice(3).trim();
+      const codeLines = [];
+      i++;
+      while (i < lines.length && !lines[i].trimStart().startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      i++; // consume closing ```
+      out.push(`<pre><code class="lang-${escHtml(lang)}">${escHtml(codeLines.join('\n'))}</code></pre>`);
+      continue;
+    }
+
+    // Headings
+    const hm = line.match(/^(#{1,3})\s+(.*)/);
+    if (hm) { const lvl = hm[1].length; out.push(`<h${lvl}>${inlineRender(hm[2])}</h${lvl}>`); i++; continue; }
+
+    // HR
+    if (/^[-*_]{3,}\s*$/.test(line)) { out.push('<hr>'); i++; continue; }
+
+    // Blockquote
+    if (line.startsWith('>')) {
+      const bqLines = [];
+      while (i < lines.length && lines[i].startsWith('>')) {
+        bqLines.push(lines[i].slice(1).trimStart());
+        i++;
+      }
+      out.push(`<blockquote>${parseMarkdown(bqLines.join('\n'))}</blockquote>`);
+      continue;
+    }
+
+    // Unordered list
+    if (/^[-*+]\s/.test(line)) {
+      const items = [];
+      while (i < lines.length && /^[-*+]\s/.test(lines[i])) {
+        items.push(`<li>${inlineRender(lines[i].replace(/^[-*+]\s/, ''))}</li>`);
+        i++;
+      }
+      out.push(`<ul>${items.join('')}</ul>`);
+      continue;
+    }
+
+    // Ordered list
+    if (/^\d+\.\s/.test(line)) {
+      const items = [];
+      while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
+        items.push(`<li>${inlineRender(lines[i].replace(/^\d+\.\s/, ''))}</li>`);
+        i++;
+      }
+      out.push(`<ol>${items.join('')}</ol>`);
+      continue;
+    }
+
+    // Table
+    if (line.includes('|') && lines[i + 1] && /^[\s|:-]+$/.test(lines[i + 1])) {
+      const headers = parseTableRow(line);
+      i += 2; // skip header and separator
+      const rows = [];
+      while (i < lines.length && lines[i].includes('|')) {
+        rows.push(parseTableRow(lines[i]));
+        i++;
+      }
+      const thead = `<tr>${headers.map(h => `<th>${inlineRender(h)}</th>`).join('')}</tr>`;
+      const tbody = rows.map(r => `<tr>${r.map(c => `<td>${inlineRender(c)}</td>`).join('')}</tr>`).join('');
+      out.push(`<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`);
+      continue;
+    }
+
+    // Blank line
+    if (line.trim() === '') { i++; continue; }
+
+    // Paragraph
+    const paraLines = [];
+    while (i < lines.length && lines[i].trim() !== '' && !lines[i].startsWith('#') && !lines[i].startsWith('>') && !/^[-*+]\s/.test(lines[i]) && !/^\d+\.\s/.test(lines[i]) && !lines[i].trimStart().startsWith('```') && !/^[-*_]{3,}\s*$/.test(lines[i])) {
+      paraLines.push(lines[i]);
+      i++;
+    }
+    if (paraLines.length) out.push(`<p>${inlineRender(paraLines.join(' '))}</p>`);
+  }
+
+  return out.join('\n');
+}
+
+function parseTableRow(line) {
+  return line.split('|').map(c => c.trim()).filter((c, idx, arr) => !(idx === 0 && c === '') && !(idx === arr.length - 1 && c === ''));
+}
+
+function inlineRender(text) {
+  // Wikilinks [[target]] or [[target|label]]
+  text = text.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, target, label) => {
+    const display = label || target;
+    return `<button class="wikilink" data-target="${escAttr(target)}">${escHtml(display)}</button>`;
+  });
+  // Bold **text**
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Italic *text* (not **)
+  text = text.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+  // Inline code `code`
+  text = text.replace(/`([^`]+)`/g, (_, c) => `<code>${escHtml(c)}</code>`);
+  // Links [label](url)
+  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  return text;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function escAttr(s) {
+  return String(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/* =========================================================
+   UI HELPERS
+   ========================================================= */
+function showVaultUI() {
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById('sidebar').style.display = 'flex';
+  document.getElementById('content').style.display = 'block';
+  document.getElementById('no-file').style.display = 'block';
+  switchTab('tab-documentos');
+}
+
+function showWelcomeUI() {
+  document.getElementById('welcome').style.display = 'flex';
+  document.getElementById('sidebar').style.display = 'none';
+  document.getElementById('content').style.display = 'none';
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+}
+
+/* =========================================================
+   TAB CLICK HANDLER
+   ========================================================= */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+/* =========================================================
+   INIT — check IndexedDB for saved handle
+   ========================================================= */
+(async function init() {
+  const handle = await loadHandle();
+  if (handle) {
+    rootHandle = handle;
+    try {
+      const perm = await handle.queryPermission({ mode: 'read' });
+      const reconnectArea = document.getElementById('reconnect-area');
+      reconnectArea.style.display = 'flex';
+      document.getElementById('btn-open-big').style.display = 'none';
+      document.getElementById('reconnect-path').textContent = handle.name || '';
+      if (perm === 'granted') {
+        await loadVault(handle);
+      }
+      // else: wait for user to click reconnect
+    } catch (_) {
+      // handle is stale, just show open button
+    }
+  }
+})();
+</script>
+</body>
+</html>
