@@ -21,6 +21,10 @@ def main() -> None:
         print(json.dumps({"status": "error", "message": "vault not found"}))
         sys.exit(2)
 
+    if not (vault / ".sdlc-kit" / "marker.json").exists():
+        print(json.dumps({"status": "error", "message": f"not a valid vault: {vault}"}))
+        sys.exit(2)
+
     db_path = get_db_path(vault)
     if not db_path.exists():
         print(json.dumps({"status": "error", "message": "db not initialized — run sdlc-kit init-db"}))
