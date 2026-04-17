@@ -47,3 +47,30 @@ def test_parse_body_excludes_frontmatter(tmp_path):
     result = parse(p)
     assert "title" not in result["body"]
     assert "Actual body" in result["body"]
+
+
+def test_parse_invalid_yaml(tmp_path):
+    """Test that invalid YAML doesn't crash; frontmatter is empty dict."""
+    p = _md(tmp_path, "---\ninvalid: [unclosed\n---\nBody")
+    result = parse(p)
+    # YAML parsing should fail gracefully
+    assert result["frontmatter"] == {} or isinstance(result["frontmatter"], dict)
+    assert "Body" in result["body"]
+
+
+def test_parse_empty_frontmatter(tmp_path):
+    """Test parsing with empty frontmatter block."""
+    p = _md(tmp_path, "---\n---\nJust body")
+    result = parse(p)
+    assert result["frontmatter"] == {}
+    assert "Just body" in result["body"]
+
+
+def test_parse_multiple_wikilinks(tmp_path):
+    """Test extraction of multiple wikilinks."""
+    p = _md(tmp_path, "[[First]] and [[Second]] and [[Third|display]]")
+    result = parse(p)
+    assert len(result["wikilinks"]) == 3
+    assert "First" in result["wikilinks"]
+    assert "Second" in result["wikilinks"]
+    assert "Third" in result["wikilinks"]

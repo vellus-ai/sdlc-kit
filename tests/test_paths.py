@@ -32,3 +32,16 @@ def test_get_db_path(vault):
 
 def test_get_marker_path(vault):
     assert get_marker_path(vault) == vault / ".sdlc-kit" / "marker.json"
+
+
+def test_find_vault_root_from_cwd_default(vault, monkeypatch):
+    """Test that find_vault_root uses cwd when no start path is given."""
+    monkeypatch.chdir(vault)
+    assert find_vault_root() == vault
+
+
+def test_find_vault_root_from_deeply_nested_subdir(vault):
+    """Test discovery from deeply nested directory."""
+    deep = vault / "a" / "b" / "c" / "d" / "e"
+    deep.mkdir(parents=True)
+    assert find_vault_root(deep) == vault

@@ -77,3 +77,35 @@ def test_scan_records_event(vault_with_db):
     scan(vault, conn)
     events = conn.execute("SELECT event_type FROM events").fetchall()
     assert any(e[0] == "note_created" for e in events)
+
+
+def test_scan_ignores_sdlc_kit_files(vault_with_db):
+    """Testa que arquivos dentro de .sdlc-kit são ignorados."""
+    vault, conn = vault_with_db
+    _write_md(vault / ".sdlc-kit" / "internal.md", "Internal")
+    result = scan(vault, conn)
+    assert result["created"] == 0
+
+
+def test_scan_multiple_phases(vault_with_db):
+    """Testa scan com notas em múltiplas fases."""
+    vault, conn = vault_with_db
+    _write_md(vault / "01-planning" / "plan.md", "# Planning")
+    _write_md(vault / "02-architecture" / "arch.md", "# Architecture")
+    _write_md(vault / "03-development" / "dev.md", "# Development")
+    result = scan(vault, conn)
+    assert result["created"] == 3
+    phases = {row[0] for row in conn.execute("SELECT phase FROM notes")}
+    assert "01" in phases
+    assert "02" in phases
+    assert "03" in phases
+
+
+def test_scan_infer_phase_patterns(vault_with_db):
+    """Testa reconhecimento de diferentes padrões de fase."""
+    vault, conn = vault_with_db
+    # Teste com prefixo no início do caminho
+    _write_md(vault / "04-review" / "note.md", "# Note")
+    scan(vault, conn)
+    row = conn.execute("SELECT phase FROM notes WHERE path LIKE '%04%'").fetchone()
+    assert row[0] == "04"
