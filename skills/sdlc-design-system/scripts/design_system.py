@@ -124,6 +124,11 @@ def action_add_token(args, vault: Path) -> int:
     if not tokens_path.exists():
         tokens_path.parent.mkdir(parents=True, exist_ok=True)
         tokens_path.write_text(_tokens_initial_content(today), encoding="utf-8")
+    else:
+        existing = tokens_path.read_text(encoding="utf-8")
+        if f"| {args.name} |" in existing:
+            print(json.dumps({"status": "skipped", "reason": "token already exists", "name": args.name}))
+            return 0
 
     with tokens_path.open("a", encoding="utf-8") as f:
         f.write(row)
@@ -158,6 +163,11 @@ def action_add_component(args, vault: Path) -> int:
     if not components_path.exists():
         components_path.parent.mkdir(parents=True, exist_ok=True)
         components_path.write_text(_components_initial_content(today), encoding="utf-8")
+    else:
+        existing = components_path.read_text(encoding="utf-8")
+        if f"\n## {args.name}\n" in existing or existing.startswith(f"## {args.name}\n"):
+            print(json.dumps({"status": "skipped", "reason": "component already exists", "name": args.name}))
+            return 0
 
     with components_path.open("a", encoding="utf-8") as f:
         f.write(entry)

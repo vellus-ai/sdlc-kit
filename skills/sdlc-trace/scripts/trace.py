@@ -2,6 +2,7 @@
 """Generate a traceability matrix linking requirements to design to tasks."""
 import argparse
 import json
+import re
 import sys
 from datetime import date
 from pathlib import Path
@@ -17,17 +18,16 @@ def _extract_requirements(text: str) -> list[str]:
     return lines
 
 
+_TASK_RE = re.compile(r"^- \[.\] (.+)$")
+
+
 def _extract_tasks(text: str) -> list[str]:
-    """Extract task lines starting with '- ['."""
+    """Extract task lines (any checkbox state) from markdown task list."""
     lines = []
     for line in text.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("- ["):
-            # Strip markdown checkbox prefix: "- [ ] " or "- [x] "
-            task_text = stripped
-            if len(stripped) > 6:
-                task_text = stripped[6:].strip() if stripped[3] in (" ", "x", "X") else stripped
-            lines.append(task_text)
+        m = _TASK_RE.match(line.strip())
+        if m:
+            lines.append(m.group(1).strip())
     return lines
 
 

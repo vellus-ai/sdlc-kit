@@ -85,12 +85,14 @@ _Links para documentação de negócio, diagramas ou especificações externas._
 """
 
 
-def _domain_events_content(context_name: str) -> str:
+def _domain_events_content(context_name: str, today: str) -> str:
     return f"""---
 title: "Domain Events: {context_name}"
 type: domain-events
 status: draft
 phase: "04"
+created: {today}
+updated: {today}
 ---
 
 # Domain Events: {context_name}
@@ -172,7 +174,7 @@ def action_add_event(args, vault: Path) -> int:
 
     context_dir.mkdir(parents=True, exist_ok=True)
     if not events_path.exists():
-        events_path.write_text(_domain_events_content(args.context_name), encoding="utf-8")
+        events_path.write_text(_domain_events_content(args.context_name, today), encoding="utf-8")
 
     with events_path.open("a", encoding="utf-8") as f:
         f.write(event_entry)
