@@ -34,12 +34,6 @@ if (-not $claudeOk) { Write-Warn "claude CLI não encontrado — instale o Claud
 if (Test-Path "$InstallDir\.git") {
     Write-Step "Atualizando instalação existente em $InstallDir..."
     git -C $InstallDir pull --ff-only
-    Write-Ok "Repositório em $InstallDir"
-    # Re-executa o script local atualizado para garantir que as etapas seguintes
-    # usem a versão mais recente (irm | iex executa a versão em memória, não o arquivo local).
-    Write-Step "Reexecutando script atualizado..."
-    & powershell -NoProfile -ExecutionPolicy Bypass -File "$InstallDir\install.ps1"
-    exit $LASTEXITCODE
 } else {
     Write-Step "Clonando repositório em $InstallDir..."
     New-Item -ItemType Directory -Force -Path (Split-Path $InstallDir) | Out-Null

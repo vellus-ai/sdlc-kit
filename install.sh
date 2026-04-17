@@ -30,11 +30,6 @@ command -v claude >/dev/null || warn "claude CLI não encontrado — instale o C
 if [[ -d "$INSTALL_DIR/.git" ]]; then
   info "Atualizando instalação existente em $INSTALL_DIR..."
   git -C "$INSTALL_DIR" pull --ff-only
-  success "Repositório em $INSTALL_DIR"
-  # Re-executa o script local atualizado — curl|bash executa o conteúdo em memória,
-  # então após o git pull o script local pode ser mais novo que o que está rodando.
-  info "Reexecutando script atualizado..."
-  exec bash "$INSTALL_DIR/install.sh"
 else
   info "Clonando repositório em $INSTALL_DIR..."
   git clone --depth 1 "$REPO" "$INSTALL_DIR"
