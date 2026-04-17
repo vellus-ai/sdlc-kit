@@ -41,8 +41,10 @@ curl -fsSL https://raw.githubusercontent.com/vellus-ai/sdlc-kit/main/install.sh 
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/vellus-ai/sdlc-kit/main/install.ps1 | iex
+irm "https://raw.githubusercontent.com/vellus-ai/sdlc-kit/main/install.ps1?v=$(Get-Random)" | iex
 ```
+
+> **Nota:** O `?v=$(Get-Random)` evita que o CDN do GitHub sirva uma versão em cache desatualizada — importante quando o script acabou de ser publicado. Se preferir omitir, a URL sem query string também funciona quando o cache já foi invalidado.
 
 O script faz tudo automaticamente: clona o repositório em `~/.claude/plugins/sdlc-kit`, instala o pacote Python, inicializa o banco de dados e registra o plugin no Claude Code.
 
