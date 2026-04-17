@@ -10,11 +10,19 @@ Returns counts: created, updated, skipped.
 Records events: note_created, note_updated.
 """
 
+import datetime
 import json
 import sqlite3
 from pathlib import Path
 
 from .parser import parse
+
+
+def _json_default(obj):
+    """JSON serializer for types not handled by default json encoder."""
+    if isinstance(obj, (datetime.date, datetime.datetime)):
+        return obj.isoformat()
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
 
 def scan(vault_root: Path, conn: sqlite3.Connection) -> dict:
@@ -62,7 +70,12 @@ def scan(vault_root: Path, conn: sqlite3.Connection) -> dict:
         status = fm.get("status", "")
         created_at = fm.get("created", "")
         updated_at = fm.get("updated", "")
-        fm_json = json.dumps(fm)
+        # Convert date/datetime objects to ISO strings for SQLite storage
+        if isinstance(created_at, (datetime.date, datetime.datetime)):
+            created_at = created_at.isoformat()
+        if isinstance(updated_at, (datetime.date, datetime.datetime)):
+            updated_at = updated_at.isoformat()
+        fm_json = json.dumps(fm, default=_json_default)
 
         # Update or insert
         if row:
