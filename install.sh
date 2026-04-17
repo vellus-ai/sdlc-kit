@@ -39,13 +39,19 @@ success "Repositório em $INSTALL_DIR"
 # ── Instalar pacote Python ───────────────────────────────────────────────────
 info "Instalando pacote Python..."
 python3 -m pip install -e "$INSTALL_DIR" --quiet
-# PyYAML melhora parsing de frontmatter (opcional, ignora falha)
 python3 -m pip install "pyyaml>=6" --quiet 2>/dev/null && success "pyyaml instalado" || warn "pyyaml não instalado (opcional)"
-success "sdlc-kit $(python3 -c 'import importlib.metadata; print(importlib.metadata.version("sdlc-kit"))' 2>/dev/null || echo 'instalado')"
+
+# Adicionar diretório de scripts Python ao PATH desta sessão
+PY_SCRIPTS=$(python3 -c "import sysconfig; print(sysconfig.get_path('scripts'))" 2>/dev/null || true)
+[[ -n "$PY_SCRIPTS" && ":$PATH:" != *":$PY_SCRIPTS:"* ]] && export PATH="$PY_SCRIPTS:$PATH"
+success "sdlc-kit instalado"
 
 # ── Inicializar banco de dados ───────────────────────────────────────────────
 info "Inicializando banco de dados..."
-python3 -m core.cli init-db 2>/dev/null || sdlc-kit init-db 2>/dev/null || warn "init-db falhou — execute 'sdlc-kit init-db' manualmente no seu projeto"
+# Usa python3 -m para contornar problemas de PATH
+PYTHONPATH="$INSTALL_DIR" python3 -m core.cli init-db \
+  && success "Banco de dados inicializado" \
+  || warn "init-db falhou — execute manualmente: python3 -m core.cli init-db"
 
 # ── Registrar plugin no Claude Code ─────────────────────────────────────────
 if command -v claude >/dev/null; then
