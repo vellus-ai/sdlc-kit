@@ -1,7 +1,13 @@
 {
   "name": "sdlc-kit",
   "version": "0.1.0",
-  "description": "Spec-Driven Development vault for Claude Code projects",
+  "description": "Spec-Driven Development vault for Claude Code projects — 20 skills, SDD/DDD, dashboard, git worktrees",
+  "author": "Vellus AI <contato@vellus.tech>",
+  "license": "MIT",
+  "homepage": "https://github.com/vellus-ai/sdlc-kit",
+  "repository": "https://github.com/vellus-ai/sdlc-kit",
+  "keywords": ["sdd", "ddd", "vault", "obsidian", "spec", "adr", "kanban", "worktree"],
+  "category": "productivity",
   "hooks": [
     {
       "event": "PostToolUse",
@@ -27,6 +33,7 @@
     { "name": "sdlc-kit:trace",        "path": "skills/sdlc-trace/SKILL.md" },
     { "name": "sdlc-kit:impact",       "path": "skills/sdlc-impact/SKILL.md" },
     { "name": "sdlc-kit:worktree",     "path": "skills/sdlc-worktree/SKILL.md" },
-    { "name": "sdlc-kit:retro",        "path": "skills/sdlc-retro/SKILL.md" }
+    { "name": "sdlc-kit:retro",        "path": "skills/sdlc-retro/SKILL.md" },
+    { "name": "sdlc-kit:dash",         "path": "skills/sdlc-dash/SKILL.md" }
   ]
 }

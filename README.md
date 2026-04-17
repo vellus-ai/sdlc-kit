@@ -4,7 +4,7 @@
 
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![Tests](https://img.shields.io/badge/tests-130%20passing-brightgreen?logo=pytest)](https://github.com/vellus-ai/sdlc-kit/actions)
-[![Skills](https://img.shields.io/badge/skills-19-blueviolet)](https://github.com/vellus-ai/sdlc-kit/tree/main/skills)
+[![Skills](https://img.shields.io/badge/skills-20-blueviolet)](https://github.com/vellus-ai/sdlc-kit/tree/main/skills)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.1.0-orange)](https://github.com/vellus-ai/sdlc-kit/releases/tag/v0.1.0)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-8A2BE2?logo=anthropic)](https://claude.ai/code)
@@ -157,6 +157,7 @@ O assistente fará 7 perguntas sobre o projeto e criará o vault `.sdlc/` com to
 |-------|-----------|
 | `/sdlc-kit:worktree` | Ciclo completo de git worktrees: `create` / `list` / `close` / `sync` |
 | `/sdlc-kit:retro` | Cria retrospectivas e rastreia itens de ação dentro de seções |
+| `/sdlc-kit:dash` | Abre o dashboard no browser a qualquer momento |
 
 ---
 

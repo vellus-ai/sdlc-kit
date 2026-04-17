@@ -1,0 +1,23 @@
+{
+  "name": "sdlc-kit",
+  "display_name": "SDLC Kit",
+  "version": "0.1.0",
+  "description": "Spec-Driven Development vault para Claude Code — cria e mantém um vault `.sdlc/` versionado no seu repositório Git com 20 skills cobrindo o ciclo completo de desenvolvimento (SDD, DDD, Kanban, ADRs, C4, worktrees, retros).",
+  "author": "Vellus AI",
+  "author_url": "https://github.com/vellus-ai",
+  "license": "MIT",
+  "repository": "https://github.com/vellus-ai/sdlc-kit",
+  "homepage": "https://github.com/vellus-ai/sdlc-kit",
+  "keywords": ["sdd", "ddd", "vault", "obsidian", "spec", "adr", "kanban", "worktree", "productivity"],
+  "category": "productivity",
+  "install": {
+    "type": "github",
+    "repo": "vellus-ai/sdlc-kit",
+    "ref": "main"
+  },
+  "requirements": {
+    "python": ">=3.11"
+  },
+  "screenshots": [],
+  "changelog_url": "https://github.com/vellus-ai/sdlc-kit/blob/main/CHANGELOG.md"
+}
