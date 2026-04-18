@@ -2,7 +2,7 @@
 
 > Plugin para **Claude Code** que cria e mantém um vault de Spec-Driven Development (SDD) e Domain-Driven Design (DDD) dentro do seu repositório Git — base de conhecimento versionada, Obsidian-compatível, otimizada para LLMs.
 
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-8A2BE2?logo=anthropic)](https://claude.ai/code) [![Skills](https://img.shields.io/badge/skills-23-blueviolet)](https://github.com/vellus-ai/sdlc-kit/tree/main/skills) [![Phases](https://img.shields.io/badge/phases-8-informational)](#estrutura-do-vault) [![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)](https://www.python.org/) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![Version](https://img.shields.io/badge/version-0.3.2-orange)](https://github.com/vellus-ai/sdlc-kit/releases/tag/v0.3.2)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-8A2BE2?logo=anthropic)](https://claude.ai/code) [![Skills](https://img.shields.io/badge/skills-23-blueviolet)](https://github.com/vellus-ai/sdlc-kit/tree/main/skills) [![Phases](https://img.shields.io/badge/phases-8-informational)](#estrutura-do-vault) [![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)](https://www.python.org/) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![Version](https://img.shields.io/badge/version-0.3.3-orange)](https://github.com/vellus-ai/sdlc-kit/releases/tag/v0.3.3)
 
 ---
 
@@ -49,7 +49,7 @@ No Claude Code, dentro de qualquer projeto Git:
 
 Pronto. Em seguida execute `/sdlc-kit:init` para criar o vault `.sdlc/` no projeto.
 
-> Para pinar a uma versão específica: `/plugin marketplace add vellus-ai/sdlc-kit@v0.3.2`.
+> Para pinar a uma versão específica: `/plugin marketplace add vellus-ai/sdlc-kit@v0.3.3`.
 
 ### Via instalador one-liner (alternativo — clona local e registra em settings.json)
 

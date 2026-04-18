@@ -7,6 +7,13 @@ aderindo ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [0.3.3] — 2026-04-18
+
+### Corrigido
+
+- **`test_dash_skill` shim quebrava `coverage.process_startup` em win/py3.11** — o shim temporário para neutralizar o abridor de browser substituía `subprocess.run` globalmente com um lambda que retornava `None` (ou levantava `RuntimeError`). Em Python 3.11 no Windows, a importação de `coverage.process_startup()` (carregada via `tests/sitecustomize.py` na PYTHONPATH) chama `subprocess.run` internamente e crashava com `AttributeError: 'NoneType' object has no attribute 'stdout'`. Fix: shim agora usa `_guarded_run` que intercepta apenas `argv[0] in ('open', 'xdg-open')` (os dois comandos que o `dash.py` chama em Darwin/Linux) e passa tudo mais pelo `subprocess.run` original. `os.startfile` (path Windows) continua substituído diretamente.
+- **Resultado**: CI passou **12/12 jobs em 9 combinações** (ubuntu/macos/windows × py3.11/3.12/3.13) + lint + coverage + registry audit — primeiro green full desde a expansão do matrix.
+
 ## [0.3.2] — 2026-04-18
 
 ### Corrigido
