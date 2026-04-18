@@ -52,11 +52,21 @@ def _run_with_shim(vault: Path, tmp_path: Path, *extra_args: str,
     env["PYTHONPATH"] = (
         str(shim_dir) + (os.pathsep + existing if existing else "")
     )
+    # This test's shim monkey-patches subprocess.run with a lambda-None,
+    # which would break `coverage.process_startup()` (it uses subprocess
+    # internally on some platforms). Opt this subprocess out of coverage
+    # capture — the dash script behaviour is still asserted via stdout JSON
+    # and is covered by the non-shim tests in the same class.
+    env.pop("COVERAGE_PROCESS_START", None)
+    # Force UTF-8 stdio so the JSON payload's `→`/`—` chars encode on
+    # Windows py3.11 where the default stdout codec is cp1252.
+    env["PYTHONIOENCODING"] = "utf-8"
     return subprocess.run(
         [sys.executable, str(SCRIPT_PATH), "--vault-root", str(vault), *extra_args],
         capture_output=True,
         text=True,
         encoding="utf-8",
+        errors="replace",
         env=env,
     )
 
