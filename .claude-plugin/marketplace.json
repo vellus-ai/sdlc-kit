@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "sdlc-kit",
-  "description": "Spec-Driven Development vault para Claude Code — cria e mantém um vault `.sdlc/` versionado no seu repositório Git com 20 skills cobrindo o ciclo completo de desenvolvimento (SDD, DDD, Kanban, ADRs, C4, worktrees, retros).",
+  "description": "Spec-Driven Development vault para Claude Code \u2014 cria e mant\u00e9m um vault `.sdlc/` versionado no seu reposit\u00f3rio Git com 23 skills cobrindo o ciclo completo de desenvolvimento (SDD, DDD, Kanban, ADRs, C4, worktrees, retros).",
   "owner": {
     "name": "Vellus AI",
     "email": "contato@vellus.tech"
@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "sdlc-kit",
-      "description": "Plugin para Claude Code que cria e mantém um vault de Spec-Driven Development (SDD) dentro do seu repositório Git. Base de conhecimento versionada, Obsidian-compatível, otimizada para LLMs. 20 skills cobrem o ciclo completo: SDD, DDD, ADRs, C4, Kanban, milestones, git worktrees, retrospectivas e dashboard HTML autocontido.",
+      "description": "Plugin para Claude Code que cria e mant\u00e9m um vault de Spec-Driven Development (SDD) dentro do seu reposit\u00f3rio Git. Base de conhecimento versionada, Obsidian-compat\u00edvel, otimizada para LLMs. 23 skills cobrem o ciclo completo: SDD, DDD, ADRs, C4, Kanban, milestones, git worktrees, retrospectivas e dashboard HTML autocontido.",
       "version": "0.1.0",
       "author": {
         "name": "Vellus AI",
@@ -33,5 +33,6 @@
         "productivity"
       ]
     }
-  ]
+  ],
+  "version": "0.2.0"
 }
