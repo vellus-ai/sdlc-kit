@@ -112,12 +112,22 @@ class TestDashSkill:
         ``opened`` to False while still exiting 0 with status=ok."""
         vault = make_vault(tmp_path)
         _write_dashboard(vault)
+        # Intercept only dash.py's three call sites — os.startfile on
+        # Windows, subprocess.run(['open', ...]) on macOS, subprocess.run
+        # (['xdg-open', ...]) on Linux. Raising from a blanket
+        # `subprocess.run = _boom` breaks coverage.process_startup() on
+        # win/py3.11 (which calls subprocess internally on import).
         shim = (
             "import os, subprocess\n"
             "def _boom(*a, **kw):\n"
             "    raise RuntimeError('no display available')\n"
             "os.startfile = _boom\n"
-            "subprocess.run = _boom\n"
+            "_orig_run = subprocess.run\n"
+            "def _guarded_run(args, *a, **kw):\n"
+            "    if args and args[0] in ('open', 'xdg-open'):\n"
+            "        raise RuntimeError('no display available')\n"
+            "    return _orig_run(args, *a, **kw)\n"
+            "subprocess.run = _guarded_run\n"
         )
         cp = _run_with_shim(vault, tmp_path, shim_body=shim)
         assert cp.returncode == 0, cp.stderr
