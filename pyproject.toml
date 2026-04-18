@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sdlc-kit"
-version = "0.2.0"
+version = "0.3.0"
 requires-python = ">=3.11"
 dependencies = []
 
@@ -33,6 +33,8 @@ markers = [
 
 [tool.coverage.run]
 branch = true
+parallel = true
+concurrency = ["multiprocessing", "thread"]
 source = ["core", "skills", "hooks"]
 omit = [
     "*/__pycache__/*",

@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "sdlc-kit",
-  "description": "Spec-Driven Development vault para Claude Code \u2014 cria e mant\u00e9m um vault `.sdlc/` versionado no seu reposit\u00f3rio Git com 23 skills cobrindo o ciclo completo de desenvolvimento (SDD, DDD, Kanban, ADRs, C4, worktrees, retros).",
+  "description": "Spec-Driven Development vault para Claude Code \u2014 cria e mant\u00e9m um vault `.sdlc/` versionado no seu reposit\u00f3rio Git com 23 skills cobrindo o ciclo completo de desenvolvimento (SDD, DDD, ADRs, C4, API contracts, Kanban, worktrees, retros, incidents, traceability + impact analysis).",
   "owner": {
     "name": "Vellus AI",
     "email": "contato@vellus.tech"
@@ -9,12 +9,7 @@
   "plugins": [
     {
       "name": "sdlc-kit",
-      "description": "Plugin para Claude Code que cria e mant\u00e9m um vault de Spec-Driven Development (SDD) dentro do seu reposit\u00f3rio Git. Base de conhecimento versionada, Obsidian-compat\u00edvel, otimizada para LLMs. 23 skills cobrem o ciclo completo: SDD, DDD, ADRs, C4, Kanban, milestones, git worktrees, retrospectivas e dashboard HTML autocontido.",
-      "version": "0.1.0",
-      "author": {
-        "name": "Vellus AI",
-        "email": "contato@vellus.tech"
-      },
+      "description": "Plugin para Claude Code que cria e mant\u00e9m um vault de Spec-Driven Development (SDD) + Domain-Driven Design (DDD) dentro do seu reposit\u00f3rio Git. Base de conhecimento versionada, Obsidian-compat\u00edvel, otimizada para LLMs. 23 skills cobrem o ciclo completo: PRDs, ADRs, TRDs, C4, API contracts (REST/async/gRPC/webhook), aggregates DDD, specs trio EARS, Kanban, milestones RAG, git worktrees, retrospectivas, incidents com auto-timestamps, PR code review dual-axis, rastreabilidade e an\u00e1lise de impacto. Dashboard HTML autocontido + i18n pt-br/en.",
       "source": "./",
       "category": "productivity",
       "homepage": "https://github.com/vellus-ai/sdlc-kit",
@@ -24,15 +19,24 @@
         "sdd",
         "spec-driven-development",
         "ddd",
+        "trd",
         "vault",
         "obsidian",
         "adr",
+        "c4-diagrams",
+        "api-design",
+        "traceability",
+        "impact-analysis",
         "kanban",
         "worktree",
-        "c4-diagrams",
+        "retrospective",
+        "post-mortem",
+        "code-review",
+        "appsec",
+        "lgpd",
         "productivity"
       ]
     }
   ],
-  "version": "0.2.0"
+  "version": "0.3.0"
 }

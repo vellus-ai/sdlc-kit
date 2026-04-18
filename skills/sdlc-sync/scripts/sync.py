@@ -29,6 +29,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+# Ensure the plugin root is importable so we can use core.* helpers.
+_PLUGIN_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+if str(_PLUGIN_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PLUGIN_ROOT))
+
+from core.i18n import t  # noqa: E402
+from core.paths import read_locale  # noqa: E402
+
 
 # ---------------------------------------------------------------------------
 # schema
@@ -354,17 +362,21 @@ def validate_notes(notes: list[Note]) -> list[Anomaly]:
 MOC_ANCHOR = "## Artifacts"
 
 
-def render_moc_artifacts(notes_in_phase: list[Note]) -> list[str]:
+def render_moc_artifacts(notes_in_phase: list[Note], locale: str = "pt-br") -> list[str]:
     """Build the `## Artifacts` section body (table or empty-state).
 
     Returns a list of lines (no trailing blank)."""
     items = [n for n in notes_in_phase if n.path.stem not in ("_MOC", "_INDEX")]
     lines: list[str] = [MOC_ANCHOR, ""]
     if not items:
-        lines.append("_No artifacts yet._")
+        lines.append(t(locale, "moc.artifacts.empty"))
         return lines
 
-    lines.append("| Document | Type | Status | Updated |")
+    col_doc = t(locale, "moc.artifacts.col_document")
+    col_type = t(locale, "moc.artifacts.col_type")
+    col_status = t(locale, "moc.artifacts.col_status")
+    col_updated = t(locale, "moc.artifacts.col_updated")
+    lines.append(f"| {col_doc} | {col_type} | {col_status} | {col_updated} |")
     lines.append("|----------|------|--------|---------|")
     for n in sorted(items, key=lambda x: (x.doc_type, x.title)):
         updated = n.frontmatter.get("updated", "—")
@@ -382,6 +394,7 @@ def regenerate_mocs(
     *,
     dry_run: bool,
     report: Report,
+    locale: str = "pt-br",
 ) -> None:
     for phase in PHASE_PREFIXES:
         moc_path = vault_root / phase / "_MOC.md"
@@ -393,7 +406,7 @@ def regenerate_mocs(
         out: list[str] = []
         i = 0
         replaced = False
-        artifacts_lines = render_moc_artifacts(notes_by_phase.get(phase, []))
+        artifacts_lines = render_moc_artifacts(notes_by_phase.get(phase, []), locale=locale)
         while i < len(lines):
             line = lines[i]
             if line.strip() == MOC_ANCHOR and not replaced:
@@ -439,6 +452,7 @@ def render_index(
     sync_ts: str,
     notes: list[Note],
     anomalies: list[Anomaly],
+    locale: str = "pt-br",
 ) -> str:
     notes_by_phase: dict[str, list[Note]] = {p: [] for p in PHASE_PREFIXES}
     for n in notes:
@@ -462,127 +476,138 @@ def render_index(
     })
     active_epics = sum(1 for n in by_type.get("epic", []) if n.status in {"planned", "in-progress"})
 
+    title = t(locale, "index.title", project=project_name)
+
     out: list[str] = []
     out.append("---")
     out.append("type: index")
-    out.append(f'title: "Índice — {project_name}"')
+    out.append(f'title: "{title}"')
     out.append("status: active")
     out.append("generated_by: sdlc-sync")
     out.append(f"updated: {sync_ts}")
     out.append("---")
     out.append("")
-    out.append(f"# Índice — {project_name}")
+    out.append(f"# {title}")
     out.append("")
-    out.append("> Gerado automaticamente por `/sdlc-kit:sync`. **Não editar manualmente.**")
-    out.append(f"> Última sincronização: **{sync_ts}**")
+    out.append(t(locale, "index.disclaimer"))
+    out.append(t(locale, "index.last_sync", timestamp=f"**{sync_ts}**"))
     out.append("")
     out.append("---")
     out.append("")
 
     # --- Panorama
-    out.append("## Panorama")
+    out.append(t(locale, "index.panorama.heading"))
     out.append("")
-    out.append("| Métrica | Valor |")
+    metric_hdr = t(locale, "index.panorama.table_header_metric")
+    value_hdr = t(locale, "index.panorama.table_header_value")
+    out.append(f"| {metric_hdr} | {value_hdr} |")
     out.append("|---|---|")
-    out.append(f"| Total de documentos | {total_notes} |")
-    out.append(f"| Epics ativos | {active_epics} |")
-    out.append(f"| Specs em andamento | {active_specs} |")
-    out.append(f"| Tasks abertas | {open_tasks} |")
-    out.append(f"| Tasks concluídas | {done_tasks} |")
-    out.append(f"| Incidents abertos | {open_incidents} |")
-    out.append(f"| ADRs registrados | {len(adrs)} |")
+    out.append(f"| {t(locale, 'index.panorama.total')} | {total_notes} |")
+    out.append(f"| {t(locale, 'index.panorama.epics_active')} | {active_epics} |")
+    out.append(f"| {t(locale, 'index.panorama.specs_active')} | {active_specs} |")
+    out.append(f"| {t(locale, 'index.panorama.tasks_open')} | {open_tasks} |")
+    out.append(f"| {t(locale, 'index.panorama.tasks_done')} | {done_tasks} |")
+    out.append(f"| {t(locale, 'index.panorama.incidents_open')} | {open_incidents} |")
+    out.append(f"| {t(locale, 'index.panorama.adrs_total')} | {len(adrs)} |")
     out.append("")
     out.append("---")
     out.append("")
 
     # --- 00 Steering
-    out.append("## Direção (00-steering)")
+    out.append(t(locale, "index.steering.heading"))
     out.append("")
-    for stem, label in (("product", "Visão de produto"),
-                        ("tech", "Princípios técnicos"),
-                        ("standards", "Padrões do time")):
+    steering_registered = t(locale, "index.steering.registered")
+    steering_pending = t(locale, "index.steering.pending")
+    for stem, label_key in (("product", "index.steering.product"),
+                            ("tech", "index.steering.tech"),
+                            ("standards", "index.steering.standards")):
+        label = t(locale, label_key)
         n = _note_by_stem(notes, stem, "00-steering")
         if n:
-            out.append(f"- [x] [[{stem}]] — {label} — _{n.status or 'registrado'}_")
+            out.append(f"- [x] [[{stem}]] — {label} — _{n.status or steering_registered}_")
         else:
-            out.append(f"- [ ] `{stem}.md` — {label} — _pendente_")
+            out.append(f"- [ ] `{stem}.md` — {label} — _{steering_pending}_")
     out.append("")
 
     # --- 01 Planning
-    out.append("## Planejamento (01-planning)")
+    out.append(t(locale, "index.planning.heading"))
     out.append("")
-    out.append("### PRDs")
+    out.append(t(locale, "index.planning.prd_section"))
     prds = [n for n in notes_by_phase["01-planning"] if n.doc_type == "prd"]
     if prds:
         for n in sorted(prds, key=lambda x: x.title):
             out.append(f"- {_status_mark(n.status)} [[{n.path.stem}]] — {n.title} — _{n.status or '—'}_")
     else:
-        out.append('_Nenhum PRD registrado. Rode `/sdlc-kit:prd new "<iniciativa>"`._')
+        out.append(t(locale, "index.planning.prd_empty"))
     out.append("")
-    out.append("### Epics")
+    out.append(t(locale, "index.planning.epic_section"))
     epics = [n for n in notes_by_phase["01-planning"] if n.doc_type == "epic"]
     if epics:
         for n in sorted(epics, key=lambda x: x.title):
             out.append(f"- {_status_mark(n.status)} [[{n.path.stem}]] — {n.title} — _{n.status or '—'}_")
     else:
-        out.append("_Nenhum epic registrado._")
+        out.append(t(locale, "index.planning.epic_empty"))
     out.append("")
-    out.append("### Milestones")
+    out.append(t(locale, "index.planning.milestone_section"))
     milestones = [n for n in notes_by_phase["01-planning"] if n.doc_type == "milestone"]
     if milestones:
         for n in sorted(milestones, key=lambda x: x.title):
             out.append(f"- {_status_mark(n.status)} [[{n.path.stem}]] — {n.title} — _{n.status or '—'}_")
     else:
-        out.append("_Nenhum milestone registrado._")
+        out.append(t(locale, "index.planning.milestone_empty"))
     out.append("")
 
     # --- 02 Architecture
-    out.append("## Arquitetura (02-architecture)")
+    out.append(t(locale, "index.arch.heading"))
     out.append("")
-    out.append("### ADRs")
+    out.append(t(locale, "index.arch.adr_section"))
     if adrs:
         for n in sorted(adrs, key=lambda x: x.path.stem):
             out.append(f"- {_status_mark(n.status)} [[{n.path.stem}]] — {n.title} — _{n.status or '—'}_")
     else:
-        out.append('_Nenhum ADR registrado. Rode `/sdlc-kit:adr new "<título>"` para a primeira decisão._')
+        out.append(t(locale, "index.arch.adr_empty"))
     out.append("")
-    out.append("### C4")
-    for stem, level in (("context", "Nível 1 (Contexto)"),
-                        ("container", "Nível 2 (Containers)"),
-                        ("component", "Nível 3 (Componentes)")):
+    out.append(t(locale, "index.arch.c4_section"))
+    c4_pending = t(locale, "index.arch.c4_pending")
+    for stem, level_key in (("context", "index.arch.c4_level1"),
+                            ("container", "index.arch.c4_level2"),
+                            ("component", "index.arch.c4_level3")):
+        level = t(locale, level_key)
         n = _note_by_stem(notes, stem, "02-architecture")
         if n:
             out.append(f"- [x] [[{stem}]] — {level}")
         else:
-            out.append(f"- [ ] `{stem}.md` — {level} — _pendente_")
+            out.append(f"- [ ] `{stem}.md` — {level} — _{c4_pending}_")
     out.append("")
-    out.append("### TRDs")
+    out.append(t(locale, "index.arch.trd_section"))
     trds = [n for n in notes_by_phase["02-architecture"] if n.doc_type == "trd"]
     if trds:
         for n in sorted(trds, key=lambda x: x.title):
             out.append(f"- {_status_mark(n.status)} [[{n.path.stem}]] — {n.title} — _{n.status or '—'}_")
     else:
-        out.append("_Nenhum TRD registrado._")
+        out.append(t(locale, "index.arch.trd_empty"))
     out.append("")
-    out.append("### APIs")
+    out.append(t(locale, "index.arch.api_section"))
     apis = [n for n in notes_by_phase["02-architecture"] if n.doc_type.startswith("api-")]
     if apis:
         for n in sorted(apis, key=lambda x: (x.doc_type, x.title)):
             out.append(f"- {_status_mark(n.status)} [[{n.path.stem}]] — {n.title} — _{n.status or '—'}_")
     else:
-        out.append("_Nenhum contrato de API registrado. Rode `/sdlc-kit:spec api {rest|grpc|async|webhook} <feature>`._")
+        out.append(t(locale, "index.arch.api_empty"))
     out.append("")
 
     # --- 03 Domain
-    out.append("## Domínio (03-domain)")
+    out.append(t(locale, "index.domain.heading"))
     out.append("")
-    for stem, label in (("context-map", "Mapa de bounded contexts"),
-                        ("ubiquitous-language", "Glossário")):
+    domain_pending = t(locale, "index.domain.pending")
+    for stem, label_key in (("context-map", "index.domain.context_map"),
+                            ("ubiquitous-language", "index.domain.ubiquitous")):
+        label = t(locale, label_key)
         n = _note_by_stem(notes, stem, "03-domain")
         if n:
             out.append(f"- [x] [[{stem}]] — {label}")
         else:
-            out.append(f"- [ ] `{stem}.md` — {label} — _pendente_")
+            out.append(f"- [ ] `{stem}.md` — {label} — _{domain_pending}_")
     out.append("")
     domain_artifacts = [n for n in notes_by_phase["03-domain"]
                         if n.doc_type in {"domain-aggregate", "domain-event", "domain-contract"}]
@@ -590,11 +615,11 @@ def render_index(
         for n in sorted(domain_artifacts, key=lambda x: (x.doc_type, x.title)):
             out.append(f"- [[{n.path.stem}]] — {n.title} _({n.doc_type})_")
     else:
-        out.append("_Nenhum aggregate, evento ou contrato registrado._")
+        out.append(t(locale, "index.domain.artifacts_empty"))
     out.append("")
 
     # --- 04 Specs
-    out.append("## Specs (04-specs)")
+    out.append(t(locale, "index.specs.heading"))
     out.append("")
     spec_types = {"spec", "spec-requirements", "spec-design", "spec-tasks"}
     spec_docs = [n for n in notes_by_phase["04-specs"] if n.doc_type in spec_types]
@@ -610,31 +635,31 @@ def render_index(
                 kind = n.doc_type.replace("spec-", "") if n.doc_type != "spec" else "spec"
                 out.append(f"  - {_status_mark(n.status)} [[{n.path.stem}]] — _{kind}_ — _{n.status or '—'}_")
     else:
-        out.append('_Nenhuma spec criada. Rode `/sdlc-kit:spec new <feature>` para o trio SDD (requirements + design + tasks)._')
+        out.append(t(locale, "index.specs.empty"))
     out.append("")
 
     # --- 05 Development
-    out.append("## Desenvolvimento (05-development)")
+    out.append(t(locale, "index.dev.heading"))
     out.append("")
-    out.append("### Worktrees")
+    out.append(t(locale, "index.dev.worktree_section"))
     worktrees = [n for n in notes_by_phase["05-development"] if n.doc_type == "worktree"]
     if worktrees:
         for n in sorted(worktrees, key=lambda x: x.title):
             out.append(f"- {_status_mark(n.status)} [[{n.path.stem}]] — {n.title} — _{n.status or '—'}_")
     else:
-        out.append("_Nenhum worktree ativo._")
+        out.append(t(locale, "index.dev.worktree_empty"))
     out.append("")
-    out.append("### Branches rastreadas")
+    out.append(t(locale, "index.dev.branch_section"))
     branches = [n for n in notes_by_phase["05-development"] if n.doc_type == "branch"]
     if branches:
         for n in sorted(branches, key=lambda x: x.title):
             out.append(f"- [[{n.path.stem}]] — {n.title}")
     else:
-        out.append("_Nenhuma branch registrada._")
+        out.append(t(locale, "index.dev.branch_empty"))
     out.append("")
 
     # --- 06 Design System
-    out.append("## Design System (06-design-system)")
+    out.append(t(locale, "index.design.heading"))
     out.append("")
     ds_items = [n for n in notes_by_phase["06-design-system"]
                 if n.doc_type in {"design-token", "design-component", "design-pattern"}]
@@ -642,50 +667,51 @@ def render_index(
         for n in sorted(ds_items, key=lambda x: (x.doc_type, x.title)):
             out.append(f"- [[{n.path.stem}]] — {n.title} _({n.doc_type})_")
     else:
-        out.append("_Vazio. Rode `/sdlc-kit:design-system {token|component|pattern} <nome>` quando começar a documentar o DS._")
+        out.append(t(locale, "index.design.empty"))
     out.append("")
 
     # --- 07 Retrospectives
-    out.append("## Retrospectivas (07-retrospectives)")
+    out.append(t(locale, "index.retro.heading"))
     out.append("")
-    out.append("### Retros")
+    out.append(t(locale, "index.retro.retros_section"))
     retros = [n for n in notes_by_phase["07-retrospectives"] if n.doc_type == "retro"]
     if retros:
         for n in sorted(retros, key=lambda x: x.path.stem, reverse=True):
             out.append(f"- [[{n.path.stem}]] — {n.title}")
     else:
-        out.append("_Nenhuma retro registrada. Rode `/sdlc-kit:retro` para criar a primeira retrospectiva._")
+        out.append(t(locale, "index.retro.retros_empty"))
     out.append("")
-    out.append("### Code Reviews")
+    out.append(t(locale, "index.retro.reviews_section"))
     reviews = [n for n in notes_by_phase["07-retrospectives"] if n.doc_type == "review"]
     if reviews:
         for n in sorted(reviews, key=lambda x: x.path.stem, reverse=True):
             out.append(f"- [[{n.path.stem}]] — {n.title}")
     else:
-        out.append("_Nenhum review registrado._")
+        out.append(t(locale, "index.retro.reviews_empty"))
     out.append("")
-    out.append("### Incidents")
+    out.append(t(locale, "index.retro.incidents_section"))
     incidents = [n for n in notes_by_phase["07-retrospectives"] if n.doc_type == "incident"]
     if incidents:
         for n in sorted(incidents, key=lambda x: x.path.stem, reverse=True):
             out.append(f"- {_status_mark(n.status)} [[{n.path.stem}]] — {n.title} — _{n.status or '—'}_")
     else:
-        out.append("_Nenhum incident registrado._")
+        out.append(t(locale, "index.retro.incidents_empty"))
     out.append("")
 
     # --- Anomalies
     out.append("---")
     out.append("")
-    out.append("## Anomalias detectadas")
+    out.append(t(locale, "index.anomalies.heading"))
     out.append("")
     if not anomalies:
-        out.append("_Nenhuma anomalia._")
+        out.append(t(locale, "index.anomalies.empty"))
     else:
         counts: dict[str, int] = {}
         for a in anomalies:
             counts[a.severity] = counts.get(a.severity, 0) + 1
         summary = ", ".join(f"{v} {k}" for k, v in sorted(counts.items()))
-        out.append(f"_Total: {len(anomalies)} ({summary}). Detalhe via `/sdlc-kit:status` ou `sdlc-kit sync --json`._")
+        count_line = t(locale, "index.anomalies.count", count=f"{len(anomalies)} ({summary})")
+        out.append(f"_{count_line}_")
         out.append("")
         # Top 10
         for a in anomalies[:10]:
@@ -695,24 +721,34 @@ def render_index(
     out.append("")
     out.append("---")
     out.append("")
-    out.append("## Atalhos úteis")
+    out.append(t(locale, "index.shortcuts.heading"))
     out.append("")
-    out.append("- [[CLAUDE]] — doutrina do vault (leitura obrigatória)")
-    out.append("- `dashboard.html` — painel autocontido (`/sdlc-kit:dash` para abrir)")
-    out.append("- `/sdlc-kit:status` — relatório de saúde via CLI")
+    out.append(f"- [[CLAUDE]] — {t(locale, 'index.shortcuts.doctrine')}")
+    out.append(f"- `dashboard.html` — {t(locale, 'index.shortcuts.dashboard')}")
+    out.append("- `/sdlc-kit:status`")
     out.append("")
     return "\n".join(out)
 
 
-def _strip_sync_timestamp(text: str) -> str:
+def _strip_sync_timestamp(text: str, locale: str = "pt-br") -> str:
     """Remove lines that carry the sync timestamp so we can compare
     content-for-content across runs."""
+    # Derive the locale-specific prefix for the "last sync" line by rendering
+    # the template with an empty timestamp and slicing off the placeholder.
+    last_sync_template = t(locale, "index.last_sync", timestamp="")
+    last_sync_prefix = last_sync_template.rstrip()
     out: list[str] = []
     for line in text.split("\n"):
         stripped = line.lstrip()
         if stripped.startswith("updated:"):
             continue
+        if last_sync_prefix and stripped.startswith(last_sync_prefix):
+            continue
+        # Legacy pt-br prefix (kept so vaults migrated from older renders stay idempotent).
         if stripped.startswith("> Última sincronização"):
+            continue
+        # EN prefix (kept for safety regardless of current locale).
+        if stripped.startswith("> Last sync"):
             continue
         out.append(line)
     return "\n".join(out)
@@ -725,6 +761,7 @@ def regenerate_index(
     *,
     dry_run: bool,
     report: Report,
+    locale: str = "pt-br",
 ) -> None:
     marker_path = vault_root / ".sdlc-kit" / "marker.json"
     project_name = "Projeto"
@@ -735,13 +772,13 @@ def regenerate_index(
             pass
 
     sync_ts = _dt.datetime.now().strftime("%Y-%m-%d %H:%M")
-    content = render_index(project_name, sync_ts, notes, anomalies)
+    content = render_index(project_name, sync_ts, notes, anomalies, locale=locale)
     index_path = vault_root / "_INDEX.md"
 
     # Idempotency: only rewrite if the non-timestamp content changed.
     if index_path.exists():
         existing = index_path.read_text(encoding="utf-8")
-        if _strip_sync_timestamp(existing) == _strip_sync_timestamp(content):
+        if _strip_sync_timestamp(existing, locale) == _strip_sync_timestamp(content, locale):
             report.index_regenerated = False
             return
 
@@ -776,6 +813,7 @@ def main() -> None:
 
     vault_root = resolve_vault(args.vault_root, report)
     report.vault_root = str(vault_root)
+    locale = read_locale(vault_root)
 
     plugin_root = Path(__file__).resolve().parent.parent.parent.parent
     try:
@@ -806,13 +844,13 @@ def main() -> None:
 
     # --- 4. Regenerate MOCs
     try:
-        regenerate_mocs(vault_root, notes_by_phase, dry_run=args.dry_run, report=report)
+        regenerate_mocs(vault_root, notes_by_phase, dry_run=args.dry_run, report=report, locale=locale)
     except Exception as exc:
         die(report, f"MOC regeneration failed: {exc}", code=2)
 
     # --- 5. Regenerate _INDEX.md
     try:
-        regenerate_index(vault_root, notes, report.anomalies, dry_run=args.dry_run, report=report)
+        regenerate_index(vault_root, notes, report.anomalies, dry_run=args.dry_run, report=report, locale=locale)
     except Exception as exc:
         die(report, f"INDEX regeneration failed: {exc}", code=2)
 

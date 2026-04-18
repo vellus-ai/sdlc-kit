@@ -2,7 +2,7 @@
 
 > Plugin para **Claude Code** que cria e mantém um vault de Spec-Driven Development (SDD) e Domain-Driven Design (DDD) dentro do seu repositório Git — base de conhecimento versionada, Obsidian-compatível, otimizada para LLMs.
 
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-8A2BE2?logo=anthropic)](https://claude.ai/code) [![Skills](https://img.shields.io/badge/skills-23-blueviolet)](https://github.com/vellus-ai/sdlc-kit/tree/main/skills) [![Phases](https://img.shields.io/badge/phases-8-informational)](#estrutura-do-vault) [![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)](https://www.python.org/) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![Version](https://img.shields.io/badge/version-0.2.0-orange)](https://github.com/vellus-ai/sdlc-kit/releases/tag/v0.2.0)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-8A2BE2?logo=anthropic)](https://claude.ai/code) [![Skills](https://img.shields.io/badge/skills-23-blueviolet)](https://github.com/vellus-ai/sdlc-kit/tree/main/skills) [![Phases](https://img.shields.io/badge/phases-8-informational)](#estrutura-do-vault) [![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)](https://www.python.org/) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![Version](https://img.shields.io/badge/version-0.3.0-orange)](https://github.com/vellus-ai/sdlc-kit/releases/tag/v0.3.0)
 
 ---
 
@@ -31,13 +31,27 @@ O SDLC Kit resolve isso criando um vault `.sdlc/` versionado no próprio reposit
 - **Dashboard HTML autocontido** — Kanban, Épicos & Milestones, Documentos, Domínio; sem servidor, via File System Access API.
 - **Rastreamento de git worktrees** e status de PRs em SQLite.
 - **Hook automático** PostToolUse que indexa cada `.md` salvo, rate-limited a 1 sinal / 5 s por vault.
-- **Plugin language-agnostic** — código e templates em inglês; o LLM espelha a língua da conversa ao preencher conteúdo. _(Exceção documentada: os títulos de seção do `_INDEX.md` gerado pelo librarian são renderizados em pt-BR — decisão de design, candidata a i18n em PR futura.)_
+- **Plugin language-agnostic + i18n do `_INDEX.md`** — código e templates em inglês; o LLM espelha a língua da conversa ao preencher conteúdo. O `_INDEX.md` e os `_MOC.md` por fase são renderizados na língua definida em `.sdlc-kit/marker.json:locale` (default `pt-br`, alternativo `en`), via `core/i18n.py`.
 
 ---
 
 ## Instalação
 
-### Instalação rápida (recomendado)
+### Via Claude Code (recomendado)
+
+No Claude Code, dentro de qualquer projeto Git:
+
+```
+/plugin marketplace add vellus-ai/sdlc-kit
+/plugin install sdlc-kit@sdlc-kit
+/reload-plugins
+```
+
+Pronto. Em seguida execute `/sdlc-kit:init` para criar o vault `.sdlc/` no projeto.
+
+> Para pinar a uma versão específica: `/plugin marketplace add vellus-ai/sdlc-kit@v0.3.0`.
+
+### Via instalador one-liner (alternativo — clona local e registra em settings.json)
 
 **Linux / macOS:**
 ```bash

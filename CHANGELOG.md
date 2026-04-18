@@ -7,6 +7,24 @@ aderindo ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-04-18
+
+### Adicionado
+
+- **i18n do `_INDEX.md` e dos `_MOC.md`** — `skills/sdlc-sync/scripts/sync.py` agora é totalmente locale-aware. `render_index()` e `render_moc_artifacts()` recebem um parâmetro `locale` e substituem as ~60 strings pt-BR hard-coded por chamadas `t(locale, key)` ao dicionário em `core/i18n.py`. O locale é lido do vault via o novo helper `core.paths.read_locale()`, que extrai `.sdlc-kit/marker.json:locale` (default `pt-br`, fallback `en`). Vaults existentes seguem renderizando em pt-BR sem mudança. Vaults novos podem pedir inglês: `scaffold --locale en`.
+- **`core.paths.read_locale(vault_root)`** — helper público que normaliza hífens e caixa (`PT_BR` → `pt-br`), trata marker ausente/malformado, devolve `DEFAULT_LOCALE` graciosamente. 100% de cobertura.
+- **`skills/sdlc-init/scripts/scaffold.py --locale {pt-br,en}`** — grava `locale` no `marker.json` durante o init. Opcional; default `pt-br`.
+- **+14 chaves em `core/i18n.py`** — `index.panorama.table_header_{metric,value}`, `moc.artifacts.{empty,col_document,col_type,col_status,col_updated}` — em `pt-br` e `en` com tradução paralela completa.
+- **Coverage de subprocess** — `tests/sitecustomize.py` + `COVERAGE_PROCESS_START` + `[tool.coverage.run] parallel = true, concurrency = ["multiprocessing", "thread"]`. `tests/_skill_helpers.py::run_script` injeta `tests/` em `PYTHONPATH` para que o shim `sitecustomize` seja carregado automaticamente em todo subprocess. A cobertura do `ci.yml` passa a rodar `pytest → coverage combine → coverage report --fail-under=80` e agora captura linhas dos **23 skill scripts + hook** (antes 0%; hoje 85–93% por módulo; total combinado 84%).
+- **CI matrix 3 OS × 3 Python** — `.github/workflows/ci.yml` roda tests em `ubuntu-latest`, `macos-latest`, `windows-latest` × Python `3.11`, `3.12`, `3.13` com `fail-fast: false`. 9 combinações.
+- **`docs/PUBLISHING.md`** — guia completo de publicação: Track A (vendor marketplace via `/plugin marketplace add`), Track B (oficial Anthropic), checklist pré-release, hygiene de segurança, FAQ.
+- **Install via Claude Code marketplace** — README ganha o snippet `/plugin marketplace add vellus-ai/sdlc-kit` + `/plugin install sdlc-kit@sdlc-kit` como instalação primária recomendada (one-liner continua disponível como alternativo).
+
+### Corrigido
+
+- **`marketplace.json`** — removido o campo `plugins[0].version` (evita o "duplicate version trap" descrito na pesquisa oficial: quando presente nos dois arquivos, `plugin.json:version` silenciosamente vence e usuários ficam presos em versões stale). `plugin.json:version` é agora a única fonte da verdade.
+- **Descrição do marketplace enriquecida** — atualizada para refletir as 23 skills reais (antes listava subset antigo), destaca API contracts e i18n pt-br/en.
+
 ## [0.2.0] — 2026-04-18
 
 ### Adicionado

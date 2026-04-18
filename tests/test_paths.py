@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 import pytest
-from core.paths import find_vault_root, get_db_path, get_marker_path
+from core.paths import DEFAULT_LOCALE, find_vault_root, get_db_path, get_marker_path, read_locale
 
 
 @pytest.fixture
@@ -45,3 +45,56 @@ def test_find_vault_root_from_deeply_nested_subdir(vault):
     deep = vault / "a" / "b" / "c" / "d" / "e"
     deep.mkdir(parents=True)
     assert find_vault_root(deep) == vault
+
+
+def test_read_locale_default_when_missing(tmp_path):
+    """No marker → default pt-br."""
+    assert read_locale(tmp_path) == DEFAULT_LOCALE
+
+
+def test_read_locale_default_when_absent_in_marker(vault):
+    """Marker without locale field → default pt-br."""
+    assert read_locale(vault) == DEFAULT_LOCALE
+
+
+def test_read_locale_returns_en(tmp_path):
+    marker = tmp_path / ".sdlc-kit"
+    marker.mkdir()
+    (marker / "marker.json").write_text(
+        json.dumps({"version": "0.2.0", "locale": "en"}), encoding="utf-8"
+    )
+    assert read_locale(tmp_path) == "en"
+
+
+def test_read_locale_normalizes_case_and_separator(tmp_path):
+    marker = tmp_path / ".sdlc-kit"
+    marker.mkdir()
+    (marker / "marker.json").write_text(
+        json.dumps({"version": "0.2.0", "locale": "PT_BR"}), encoding="utf-8"
+    )
+    assert read_locale(tmp_path) == "pt-br"
+
+
+def test_read_locale_ignores_empty_string(tmp_path):
+    marker = tmp_path / ".sdlc-kit"
+    marker.mkdir()
+    (marker / "marker.json").write_text(
+        json.dumps({"version": "0.2.0", "locale": "  "}), encoding="utf-8"
+    )
+    assert read_locale(tmp_path) == DEFAULT_LOCALE
+
+
+def test_read_locale_ignores_non_string(tmp_path):
+    marker = tmp_path / ".sdlc-kit"
+    marker.mkdir()
+    (marker / "marker.json").write_text(
+        json.dumps({"version": "0.2.0", "locale": 42}), encoding="utf-8"
+    )
+    assert read_locale(tmp_path) == DEFAULT_LOCALE
+
+
+def test_read_locale_handles_malformed_json(tmp_path):
+    marker = tmp_path / ".sdlc-kit"
+    marker.mkdir()
+    (marker / "marker.json").write_text("{ not valid json", encoding="utf-8")
+    assert read_locale(tmp_path) == DEFAULT_LOCALE

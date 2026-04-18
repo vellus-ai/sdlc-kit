@@ -15,6 +15,7 @@ matching the plugin's stdlib-only policy (no pytest plugins required).
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -24,6 +25,25 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO_ROOT / "skills"
 VAULT_TREE = REPO_ROOT / "assets" / "vault-tree"
+TESTS_DIR = Path(__file__).resolve().parent
+
+
+def _subprocess_env() -> dict[str, str]:
+    """Environment for subprocess calls that propagates coverage-of-subprocess.
+
+    Adds `tests/` to PYTHONPATH so `tests/sitecustomize.py` is auto-loaded in
+    the child interpreter. When `COVERAGE_PROCESS_START` is set in the parent
+    (done automatically by pytest-cov), `coverage.process_startup()` fires in
+    the child and writes a `.coverage.<pid>` data file that `coverage combine`
+    stitches into the parent report.
+    """
+    env = os.environ.copy()
+    existing = env.get("PYTHONPATH", "")
+    parts = [str(TESTS_DIR)]
+    if existing:
+        parts.append(existing)
+    env["PYTHONPATH"] = os.pathsep.join(parts)
+    return env
 
 
 def _write_marker(vault: Path, *, owner: str = "team-alpha", project_name: str = "Acme") -> None:
@@ -72,6 +92,7 @@ def run_script(script_rel: str, args: list[str]) -> subprocess.CompletedProcess:
         capture_output=True,
         text=True,
         encoding="utf-8",
+        env=_subprocess_env(),
     )
 
 

@@ -1,6 +1,6 @@
 {
   "name": "sdlc-kit",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Spec-Driven Development vault for Claude Code projects \u2014 23 skills across 8 canonical phases, SDD/DDD/C4, dashboard, git worktrees, traceability + impact analysis",
   "author": {
     "name": "Vellus AI",

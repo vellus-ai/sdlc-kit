@@ -104,6 +104,15 @@ MESSAGES: dict[str, dict[str, str]] = {
         "index.shortcuts.heading": "## Atalhos úteis",
         "index.shortcuts.doctrine": "doutrina do vault (leitura obrigatória)",
         "index.shortcuts.dashboard": "painel autocontido (abrir no browser)",
+        # Panorama table headers
+        "index.panorama.table_header_metric": "Métrica",
+        "index.panorama.table_header_value": "Valor",
+        # MOC (per-phase) artifact list
+        "moc.artifacts.empty": "_Sem artefatos ainda._",
+        "moc.artifacts.col_document": "Documento",
+        "moc.artifacts.col_type": "Tipo",
+        "moc.artifacts.col_status": "Status",
+        "moc.artifacts.col_updated": "Atualizado",
     },
     "en": {
         # Heading + disclaimer
@@ -181,6 +190,15 @@ MESSAGES: dict[str, dict[str, str]] = {
         "index.shortcuts.heading": "## Useful shortcuts",
         "index.shortcuts.doctrine": "vault doctrine (required reading)",
         "index.shortcuts.dashboard": "self-contained dashboard (open in browser)",
+        # Panorama table headers
+        "index.panorama.table_header_metric": "Metric",
+        "index.panorama.table_header_value": "Value",
+        # MOC (per-phase) artifact list
+        "moc.artifacts.empty": "_No artifacts yet._",
+        "moc.artifacts.col_document": "Document",
+        "moc.artifacts.col_type": "Type",
+        "moc.artifacts.col_status": "Status",
+        "moc.artifacts.col_updated": "Updated",
     },
 }
 

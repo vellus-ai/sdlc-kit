@@ -2,11 +2,25 @@
 Shared fixtures for SDLC Kit test suite.
 Contains common test utilities and vault setups.
 """
+from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+
 import pytest
+
 from core.db import connect, run_migrations
+
+# Point any subprocess using our sitecustomize shim (tests/sitecustomize.py)
+# at the pyproject.toml coverage config. pytest-cov sets this automatically
+# for its own worker processes, but we also inherit it here for the skill
+# scripts invoked via `_skill_helpers.run_script` so their line coverage is
+# captured. Safe to set unconditionally — when pytest-cov is not loaded the
+# sitecustomize shim is a no-op.
+_PYPROJECT = Path(__file__).resolve().parent.parent / "pyproject.toml"
+if _PYPROJECT.exists() and "COVERAGE_PROCESS_START" not in os.environ:
+    os.environ["COVERAGE_PROCESS_START"] = str(_PYPROJECT)
 
 
 @pytest.fixture

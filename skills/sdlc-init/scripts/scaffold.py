@@ -250,6 +250,7 @@ def write_marker(vault_root: Path, args: argparse.Namespace, *, dry_run: bool, r
         "owner": args.owner,
         "stack": args.stack,
         "repo_url": args.repo_url,
+        "locale": getattr(args, "locale", None) or "pt-br",
     }
     marker.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
     report.files_created.append(rel_label)
@@ -278,6 +279,12 @@ def parse_args() -> argparse.Namespace:
         "--skip-git-check",
         action="store_true",
         help="bypass git-repo verification (use in CI / testing only)",
+    )
+    parser.add_argument(
+        "--locale",
+        choices=("pt-br", "en"),
+        default="pt-br",
+        help="language for librarian-rendered content (pt-br by default)",
     )
     return parser.parse_args()
 

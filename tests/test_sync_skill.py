@@ -81,3 +81,43 @@ class TestSyncErrors:
     def test_not_a_vault(self, tmp_path: Path) -> None:
         cp = run_script("sdlc-sync/scripts/sync.py", ["--vault-root", str(tmp_path)])
         assert cp.returncode != 0
+
+
+class TestSyncI18n:
+    def test_index_defaults_to_ptbr(self, tmp_path):
+        vault = make_vault(tmp_path, "01-planning")
+        _init_db(vault)
+        cp = run_script("sdlc-sync/scripts/sync.py", ["--vault-root", str(vault)])
+        assert cp.returncode == 0
+        idx = (vault / "_INDEX.md").read_text(encoding="utf-8")
+        assert "## Panorama" in idx  # pt-BR heading
+
+    def test_index_with_locale_en(self, tmp_path):
+        vault = make_vault(tmp_path, "01-planning")
+        # Force locale=en in marker.json
+        marker = vault / ".sdlc-kit" / "marker.json"
+        import json as _json
+        data = _json.loads(marker.read_text(encoding="utf-8"))
+        data["locale"] = "en"
+        marker.write_text(_json.dumps(data), encoding="utf-8")
+        _init_db(vault)
+        cp = run_script("sdlc-sync/scripts/sync.py", ["--vault-root", str(vault)])
+        assert cp.returncode == 0
+        idx = (vault / "_INDEX.md").read_text(encoding="utf-8")
+        assert "## Overview" in idx   # EN heading
+        assert "## Panorama" not in idx  # no pt-BR leakage
+
+    def test_moc_artifacts_empty_state_uses_locale(self, tmp_path):
+        vault = make_vault(tmp_path, "02-architecture")
+        _init_db(vault)
+        # Force EN
+        marker = vault / ".sdlc-kit" / "marker.json"
+        import json as _json
+        data = _json.loads(marker.read_text(encoding="utf-8"))
+        data["locale"] = "en"
+        marker.write_text(_json.dumps(data), encoding="utf-8")
+        cp = run_script("sdlc-sync/scripts/sync.py", ["--vault-root", str(vault)])
+        assert cp.returncode == 0
+        # The _MOC.md for 02-architecture should exist and have EN empty-state.
+        moc = (vault / "02-architecture" / "_MOC.md").read_text(encoding="utf-8")
+        assert "_No artifacts yet._" in moc
