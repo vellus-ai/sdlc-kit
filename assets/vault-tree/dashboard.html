@@ -1,38 +1,49 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SDLC Kit Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #f8f9fa;
+      --bg: #faf9f5;
       --white: #ffffff;
-      --text: #212529;
-      --text-sec: #495057;
-      --accent: #1a56db;
-      --border: #dee2e6;
-      --tab-inactive: #6c757d;
-      --fm-bg: #f1f3f5;
-      --code-bg: #f8f9fa;
-      --danger: #dc3545;
-      --success: #198754;
+      --bg-secondary: #F5F4EF;
+      --text: #141413;
+      --text-sec: #5c5c5a;
+      --text-muted: #8c8c8a;
+      --accent: #D97757;
+      --accent-hover: #c4684a;
+      --accent-soft: rgba(217, 119, 87, 0.08);
+      --border: #e5e4df;
+      --border-light: #eeeee9;
+      --tab-inactive: #8c8c8a;
+      --fm-bg: #F5F4EF;
+      --code-bg: #F5F4EF;
+      --danger: #b54848;
+      --success: #4f8c5e;
+      --warning: #c98a3e;
+      --shadow: rgba(20, 20, 19, 0.04);
+      --shadow-hover: rgba(20, 20, 19, 0.08);
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; letter-spacing: -0.005em; }
     /* TOP BAR */
     header { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 1.5rem; height: 52px; display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
     #project-name { font-weight: 700; font-size: 1.05rem; color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     #health-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
-    #health-dot.warn { background: #fd7e14; }
+    #health-dot.warn { background: var(--warning); }
     #health-dot.err { background: var(--danger); }
-    #btn-open { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 6px 16px; font-size: 0.9rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
-    #btn-open:hover { background: #1648c0; }
+    #btn-open { background: var(--accent); color: #fff; border: 1px solid var(--accent); border-radius: 8px; padding: 8px 18px; font-size: 0.88rem; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all 0.15s ease; }
+    #btn-open:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
     /* TABS NAV */
     nav { background: var(--white); border-bottom: 1px solid var(--border); display: flex; padding: 0 1.5rem; flex-shrink: 0; }
-    .tab-btn { background: none; border: none; border-bottom: 3px solid transparent; padding: 10px 18px; font-size: 0.92rem; font-weight: 500; color: var(--tab-inactive); cursor: pointer; margin-bottom: -1px; }
+    .tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 12px 18px; font-size: 0.9rem; font-weight: 500; color: var(--tab-inactive); cursor: pointer; margin-bottom: -1px; transition: color 0.15s ease; }
     .tab-btn:hover { color: var(--text); }
-    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+    .tab-btn.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
     /* MAIN AREA */
     main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
     .tab-panel { display: none; flex: 1; overflow: hidden; }
@@ -45,32 +56,33 @@
     #tab-tasks { flex-direction: column; overflow: hidden; }
     .tasks-toolbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
     .tasks-toolbar span { font-size: 0.85rem; color: var(--text-sec); }
-    .view-toggle { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 4px 12px; font-size: 0.83rem; cursor: pointer; color: var(--text-sec); }
-    .view-toggle.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .view-toggle { background: var(--bg-secondary); border: 1px solid transparent; border-radius: 6px; padding: 6px 14px; font-size: 0.82rem; cursor: pointer; color: var(--text-muted); font-weight: 500; transition: all 0.15s ease; }
+    .view-toggle:hover { color: var(--text); }
+    .view-toggle.active { background: var(--white); color: var(--text); box-shadow: 0 1px 3px var(--shadow); }
     #tasks-view-kanban, #tasks-view-graph { flex: 1; overflow: hidden; }
     #tasks-view-graph { display: none; }
     /* KANBAN BOARD */
-    #kanban-board { display: flex; gap: 1rem; padding: 1.25rem 1.5rem; height: 100%; overflow-x: auto; align-items: flex-start; }
-    .kanban-col { background: var(--fm-bg); border: 1px solid var(--border); border-radius: 10px; width: 280px; min-width: 240px; flex-shrink: 0; display: flex; flex-direction: column; max-height: calc(100% - 1rem); }
-    .kanban-col-header { padding: 0.75rem 1rem; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.5rem; }
-    .kanban-col-header .count { background: var(--border); border-radius: 99px; padding: 1px 7px; font-size: 0.75rem; font-weight: 600; color: var(--text-sec); }
-    .kanban-col-body { flex: 1; overflow-y: auto; padding: 0.6rem; display: flex; flex-direction: column; gap: 0.5rem; }
-    .kanban-card { background: var(--white); border: 1px solid var(--border); border-radius: 7px; padding: 0.65rem 0.85rem; font-size: 0.85rem; cursor: default; }
-    .kanban-card:hover { border-color: var(--accent); }
-    .kanban-card .card-title { color: var(--text); line-height: 1.4; margin-bottom: 0.35rem; }
-    .kanban-card .card-meta { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-    .tag-epic { background: #e7f0ff; color: #1648c0; border-radius: 4px; padding: 1px 6px; font-size: 0.75rem; font-weight: 600; }
-    .tag-branch { background: #e6f9f0; color: #157347; border-radius: 4px; padding: 1px 6px; font-size: 0.75rem; font-family: 'Cascadia Code', Consolas, monospace; }
+    #kanban-board { display: flex; gap: 1.25rem; padding: 1.25rem 1.5rem; height: 100%; overflow-x: auto; align-items: flex-start; }
+    .kanban-col { background: var(--bg-secondary); border: none; border-radius: 12px; width: 300px; min-width: 260px; flex-shrink: 0; display: flex; flex-direction: column; max-height: calc(100% - 1rem); }
+    .kanban-col-header { padding: 1rem 1.1rem; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-sec); display: flex; align-items: center; gap: 0.5rem; }
+    .kanban-col-header .count { background: var(--white); border-radius: 12px; padding: 3px 10px; font-size: 0.72rem; font-weight: 500; color: var(--text-muted); margin-left: auto; }
+    .kanban-col-body { flex: 1; overflow-y: auto; padding: 0 0.75rem 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    .kanban-card { background: var(--white); border: 1px solid var(--border-light); border-radius: 8px; padding: 0.75rem 0.9rem; font-size: 0.85rem; cursor: default; box-shadow: 0 1px 2px var(--shadow); transition: box-shadow 0.15s ease, border-color 0.15s ease; }
+    .kanban-card:hover { border-color: var(--border); box-shadow: 0 2px 6px var(--shadow-hover); }
+    .kanban-card .card-title { color: var(--text); line-height: 1.45; margin-bottom: 0.4rem; font-weight: 500; }
+    .kanban-card .card-meta { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .tag-epic { background: var(--accent-soft); color: var(--accent-hover); border-radius: 4px; padding: 2px 7px; font-size: 0.73rem; font-weight: 500; }
+    .tag-branch { background: var(--bg-secondary); color: var(--text-sec); border-radius: 4px; padding: 2px 7px; font-size: 0.73rem; font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace; }
     .col-backlog .kanban-col-header { color: var(--text-sec); }
-    .col-progress .kanban-col-header { color: #fd7e14; }
+    .col-progress .kanban-col-header { color: var(--warning); }
     .col-done .kanban-col-header { color: var(--success); }
     #kanban-empty { display: none; flex: 1; align-items: center; justify-content: center; flex-direction: column; gap: 0.5rem; color: var(--text-sec); padding: 2rem; text-align: center; }
     /* BRANCH GRAPH */
     #branch-graph-wrap { flex: 1; overflow-y: auto; padding: 1.25rem 1.5rem; }
-    .branch-lane { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 1rem; }
-    .branch-name { font-family: 'Cascadia Code', Consolas, monospace; font-size: 0.87rem; color: var(--text); font-weight: 600; flex: 1; }
+    .branch-lane { background: var(--white); border: 1px solid var(--border-light); border-radius: 10px; padding: 0.85rem 1.1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 1px 2px var(--shadow); }
+    .branch-name { font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace; font-size: 0.85rem; color: var(--text); font-weight: 500; flex: 1; }
     .branch-bar-wrap { flex: 2; }
-    .branch-bar { height: 12px; border-radius: 6px; background: var(--accent); opacity: 0.8; min-width: 8px; }
+    .branch-bar { height: 10px; border-radius: 5px; background: var(--accent); opacity: 0.85; min-width: 8px; }
     .branch-count { font-size: 0.8rem; color: var(--text-sec); white-space: nowrap; }
     .branch-pr-hint { font-size: 0.75rem; color: var(--text-sec); font-style: italic; white-space: nowrap; }
     #graph-empty { display: none; flex: 1; align-items: center; justify-content: center; flex-direction: column; gap: 0.5rem; color: var(--text-sec); padding: 2rem; text-align: center; }
@@ -78,28 +90,29 @@
     #tab-epicos { flex-direction: row; }
     #epicos-sidebar { width: 220px; min-width: 160px; background: var(--white); border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; }
     #epicos-sidebar-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.8rem; font-weight: 700; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.05em; }
-    .epicos-nav-item { padding: 8px 1rem; font-size: 0.87rem; color: var(--text-sec); cursor: pointer; border-left: 3px solid transparent; }
-    .epicos-nav-item:hover { background: var(--bg); color: var(--text); }
-    .epicos-nav-item.active { background: #eef2fb; color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+    .epicos-nav-item { padding: 10px 1rem; font-size: 0.87rem; color: var(--text-sec); cursor: pointer; border-left: 2px solid transparent; transition: all 0.15s ease; }
+    .epicos-nav-item:hover { background: var(--bg-secondary); color: var(--text); }
+    .epicos-nav-item.active { background: var(--accent-soft); color: var(--text); border-left-color: var(--accent); font-weight: 600; }
     #epicos-content { flex: 1; overflow-y: auto; padding: 2rem; background: var(--bg); }
     #epicos-inner { max-width: 720px; margin: 0 auto; }
-    .rag-green { color: #198754; }
-    .rag-amber { color: #fd7e14; }
+    .rag-green { color: var(--success); }
+    .rag-amber { color: var(--warning); }
     .rag-red { color: var(--danger); }
-    .epic-card, .milestone-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 0.85rem; }
-    .epic-card h3, .milestone-card h3 { font-size: 1rem; margin-bottom: 0.5rem; color: var(--text); }
+    .epic-card, .milestone-card { background: var(--white); border: 1px solid var(--border-light); border-radius: 10px; padding: 1.1rem 1.3rem; margin-bottom: 0.85rem; box-shadow: 0 1px 2px var(--shadow); transition: box-shadow 0.15s ease; }
+    .epic-card:hover, .milestone-card:hover { box-shadow: 0 2px 6px var(--shadow-hover); }
+    .epic-card h3, .milestone-card h3 { font-size: 1rem; margin-bottom: 0.5rem; color: var(--text); font-weight: 600; }
     .epic-card .meta, .milestone-card .meta { font-size: 0.83rem; color: var(--text-sec); display: flex; flex-wrap: wrap; gap: 0.75rem; }
-    .progress-bar-wrap { background: var(--fm-bg); border-radius: 4px; height: 6px; margin-top: 0.5rem; overflow: hidden; }
+    .progress-bar-wrap { background: var(--bg-secondary); border-radius: 4px; height: 6px; margin-top: 0.6rem; overflow: hidden; }
     .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; }
     /* WELCOME SCREEN */
     #welcome { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1.2rem; padding: 2rem; text-align: center; }
-    #welcome h2 { font-size: 1.4rem; color: var(--text); }
-    #welcome p { color: var(--text-sec); max-width: 420px; line-height: 1.6; }
-    #btn-open-big { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 12px 28px; font-size: 1rem; font-weight: 700; cursor: pointer; }
-    #btn-open-big:hover { background: #1648c0; }
-    #btn-reconnect { background: var(--white); color: var(--accent); border: 2px solid var(--accent); border-radius: 8px; padding: 10px 24px; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
-    #btn-reconnect:hover { background: #eef2fb; }
-    #reconnect-path { font-size: 0.82rem; color: var(--text-sec); max-width: 380px; word-break: break-all; }
+    #welcome h2 { font-size: 1.5rem; color: var(--text); font-weight: 600; letter-spacing: -0.02em; }
+    #welcome p { color: var(--text-sec); max-width: 440px; line-height: 1.6; }
+    #btn-open-big { background: var(--accent); color: #fff; border: 1px solid var(--accent); border-radius: 8px; padding: 11px 26px; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.15s ease; }
+    #btn-open-big:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    #btn-reconnect { background: var(--white); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 10px 22px; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.15s ease; }
+    #btn-reconnect:hover { background: var(--bg-secondary); border-color: var(--text-muted); }
+    #reconnect-path { font-size: 0.82rem; color: var(--text-muted); max-width: 380px; word-break: break-all; }
     /* DOCUMENTOS LAYOUT */
     #tab-documentos { flex-direction: row; }
     #sidebar { width: 260px; min-width: 180px; max-width: 380px; background: var(--white); border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; }
@@ -112,9 +125,9 @@
     .tree-group-label.collapsed::before { transform: rotate(-90deg); }
     .tree-files { }
     .tree-files.collapsed { display: none; }
-    .tree-file { padding: 5px 1rem 5px 2rem; font-size: 0.85rem; color: var(--text-sec); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 4px; margin: 1px 4px; }
-    .tree-file:hover { background: var(--bg); color: var(--text); }
-    .tree-file.active { background: #eef2fb; color: var(--accent); font-weight: 600; }
+    .tree-file { padding: 5px 1rem 5px 2rem; font-size: 0.85rem; color: var(--text-sec); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 6px; margin: 1px 6px; transition: background 0.12s ease; }
+    .tree-file:hover { background: var(--bg-secondary); color: var(--text); }
+    .tree-file.active { background: var(--accent-soft); color: var(--text); font-weight: 600; }
     /* CONTENT PANEL */
     #content { flex: 1; overflow-y: auto; padding: 2rem; background: var(--bg); }
     #content-inner { max-width: 760px; margin: 0 auto; }
@@ -132,16 +145,17 @@
     .md-body ul, .md-body ol { margin: 0.65rem 0 0.65rem 1.5rem; }
     .md-body li { margin: 0.25rem 0; }
     .md-body blockquote { border-left: 4px solid var(--border); padding: 0.4rem 1rem; margin: 0.8rem 0; color: var(--text-sec); background: var(--fm-bg); border-radius: 0 4px 4px 0; }
-    .md-body code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 3px; padding: 0.1em 0.4em; font-size: 0.88em; font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; color: #c7254e; }
-    .md-body pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; overflow-x: auto; margin: 0.8rem 0; }
-    .md-body pre code { background: none; border: none; padding: 0; color: var(--text); font-size: 0.87rem; }
+    .md-body code { background: var(--code-bg); border: 1px solid var(--border-light); border-radius: 4px; padding: 0.12em 0.42em; font-size: 0.86em; font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace; color: var(--accent-hover); }
+    .md-body pre { background: var(--code-bg); border: 1px solid var(--border-light); border-radius: 8px; padding: 1rem; overflow-x: auto; margin: 0.8rem 0; }
+    .md-body pre code { background: none; border: none; padding: 0; color: var(--text); font-size: 0.86rem; }
     .md-body hr { border: none; border-top: 1px solid var(--border); margin: 1.2rem 0; }
     .md-body table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.9rem; }
     .md-body th, .md-body td { border: 1px solid var(--border); padding: 6px 12px; text-align: left; }
     .md-body th { background: var(--fm-bg); font-weight: 600; }
-    .md-body a { color: var(--accent); text-decoration: underline; }
-    .wikilink { color: var(--accent); cursor: pointer; text-decoration: underline; background: none; border: none; padding: 0; font: inherit; }
-    .wikilink:hover { color: #1648c0; }
+    .md-body a { color: var(--accent-hover); text-decoration: underline; text-underline-offset: 2px; }
+    .md-body a:hover { color: var(--accent); }
+    .wikilink { color: var(--accent-hover); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; background: none; border: none; padding: 0; font: inherit; }
+    .wikilink:hover { color: var(--accent); }
     #no-file { color: var(--text-sec); font-size: 0.95rem; padding: 2rem 0; }
   </style>
 </head>
@@ -150,42 +164,42 @@
 <header>
   <span id="project-name">SDLC Vault</span>
   <span id="health-dot" title="Vault OK"></span>
-  <button id="btn-open" onclick="openVault()">Abrir Vault</button>
+  <button id="btn-open" onclick="openVault()">Open Vault</button>
 </header>
 
 <nav>
-  <button class="tab-btn active" data-tab="tab-documentos">Documentos</button>
+  <button class="tab-btn active" data-tab="tab-documentos">Docs</button>
   <button class="tab-btn" data-tab="tab-tasks">Tasks</button>
-  <button class="tab-btn" data-tab="tab-epicos">Épicos &amp; Milestones</button>
-  <button class="tab-btn" data-tab="tab-dominio">Domínio</button>
+  <button class="tab-btn" data-tab="tab-epicos">Epics &amp; Milestones</button>
+  <button class="tab-btn" data-tab="tab-dominio">Domain</button>
 </nav>
 
 <main>
   <div id="tab-documentos" class="tab-panel active">
     <div id="welcome">
-      <h2>Bem-vindo ao SDLC Kit Dashboard</h2>
-      <p>Selecione a pasta <code>.sdlc/</code> do seu projeto para visualizar e navegar pela documentação do vault.</p>
-      <button id="btn-open-big" onclick="openVault()">Abrir Vault</button>
+      <h2>Welcome to the SDLC Kit Dashboard</h2>
+      <p>Select your project's <code>.sdlc/</code> folder to browse and explore the vault documentation.</p>
+      <button id="btn-open-big" onclick="openVault()">Open Vault</button>
       <div id="reconnect-area" style="display:none; flex-direction:column; align-items:center; gap:0.5rem;">
-        <button id="btn-reconnect" onclick="reconnectVault()">Reconectar ao vault</button>
+        <button id="btn-reconnect" onclick="reconnectVault()">Reconnect to vault</button>
         <span id="reconnect-path"></span>
-        <button id="btn-open-big-alt" onclick="openVault()" style="background:none;border:none;color:var(--accent);font-size:0.85rem;cursor:pointer;text-decoration:underline;">Escolher outra pasta</button>
+        <button id="btn-open-big-alt" onclick="openVault()" style="background:none;border:none;color:var(--accent-hover);font-size:0.85rem;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">Choose another folder</button>
       </div>
     </div>
     <div id="sidebar" style="display:none;">
-      <div id="sidebar-header">Arquivos</div>
+      <div id="sidebar-header">Files</div>
       <div id="file-tree"></div>
     </div>
     <div id="content" style="display:none;">
       <div id="content-inner">
-        <p id="no-file">Selecione um arquivo no painel lateral.</p>
+        <p id="no-file">Select a file from the sidebar.</p>
       </div>
     </div>
   </div>
 
   <div id="tab-tasks" class="tab-panel">
     <div class="tasks-toolbar">
-      <span id="tasks-file-hint">Abra um vault para ver as tasks.</span>
+      <span id="tasks-file-hint">Open a vault to view the tasks.</span>
       <button class="view-toggle active" id="btn-kanban-view" onclick="switchTasksView('kanban')">Kanban</button>
       <button class="view-toggle" id="btn-graph-view" onclick="switchTasksView('graph')">Branches</button>
     </div>
@@ -196,24 +210,24 @@
           <div class="kanban-col-body" id="col-backlog-body"></div>
         </div>
         <div class="kanban-col col-progress">
-          <div class="kanban-col-header">Em Progresso <span class="count" id="count-progress">0</span></div>
+          <div class="kanban-col-header">In Progress <span class="count" id="count-progress">0</span></div>
           <div class="kanban-col-body" id="col-progress-body"></div>
         </div>
         <div class="kanban-col col-done">
-          <div class="kanban-col-header">Concluído <span class="count" id="count-done">0</span></div>
+          <div class="kanban-col-header">Done <span class="count" id="count-done">0</span></div>
           <div class="kanban-col-body" id="col-done-body"></div>
         </div>
       </div>
       <div id="kanban-empty">
-        <p>Nenhuma task encontrada.</p>
-        <small>Execute <code>/sdlc-kit:task</code> para adicionar tasks ao vault.</small>
+        <p>No tasks found.</p>
+        <small>Run <code>/sdlc-kit:task</code> to add tasks to the vault.</small>
       </div>
     </div>
     <div id="tasks-view-graph" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
       <div id="branch-graph-wrap">
         <div id="graph-empty" style="display:flex;">
-          <p>Nenhuma branch referenciada nas tasks.</p>
-          <small>Adicione tasks com <code>@branch-name</code> para ver o gráfico.</small>
+          <p>No branches referenced in the tasks.</p>
+          <small>Add tasks with <code>@branch-name</code> to see the graph.</small>
         </div>
       </div>
     </div>
@@ -221,17 +235,17 @@
 
   <div id="tab-epicos" class="tab-panel">
     <div id="epicos-sidebar">
-      <div id="epicos-sidebar-header">Visão</div>
-      <div class="epicos-nav-item active" data-epicos-view="epics" onclick="switchEpicosView('epics')">Épicos</div>
+      <div id="epicos-sidebar-header">View</div>
+      <div class="epicos-nav-item active" data-epicos-view="epics" onclick="switchEpicosView('epics')">Epics</div>
       <div class="epicos-nav-item" data-epicos-view="milestones" onclick="switchEpicosView('milestones')">Milestones</div>
     </div>
     <div id="epicos-content">
       <div id="epicos-inner">
         <div id="epicos-view-epics">
-          <p style="color:var(--text-sec); font-size:0.95rem;">Abra um vault para visualizar os épicos.</p>
+          <p style="color:var(--text-sec); font-size:0.95rem;">Open a vault to view the epics.</p>
         </div>
         <div id="epicos-view-milestones" style="display:none;">
-          <p style="color:var(--text-sec); font-size:0.95rem;">Abra um vault para visualizar os milestones.</p>
+          <p style="color:var(--text-sec); font-size:0.95rem;">Open a vault to view the milestones.</p>
         </div>
       </div>
     </div>
@@ -239,8 +253,8 @@
 
   <div id="tab-dominio" class="tab-panel">
     <div class="placeholder">
-      <p>Glossário e modelo de domínio</p>
-      <small>Disponível em uma próxima fase.</small>
+      <p>Glossary and domain model</p>
+      <small>Available in a future phase.</small>
     </div>
   </div>
 </main>
@@ -296,7 +310,7 @@ async function loadHandle() {
    ========================================================= */
 async function openVault() {
   if (!window.showDirectoryPicker) {
-    alert('Este navegador não suporta a File System Access API. Use Chrome ou Edge atualizado.');
+    alert('This browser does not support the File System Access API. Please use an updated version of Chrome or Edge.');
     return;
   }
   try {
@@ -478,7 +492,7 @@ function navigateWikilink(target) {
     // Switch to documentos tab if not already
     switchTab('tab-documentos');
   } else {
-    alert(`Arquivo não encontrado: [[${target}]]`);
+    alert(`File not found: [[${target}]]`);
   }
 }
 
@@ -729,11 +743,11 @@ async function renderKanban() {
   progressBody.innerHTML = '';
   doneBody.innerHTML = '';
 
-  if (!rootHandle) { hint.textContent = 'Abra um vault para ver as tasks.'; return; }
+  if (!rootHandle) { hint.textContent = 'Open a vault to view the tasks.'; return; }
 
   const text = await readFileFromVault(['03-development', 'TASKS.md']);
   if (!text) {
-    hint.textContent = 'TASKS.md não encontrado. Execute /sdlc-kit:task para criar.';
+    hint.textContent = 'TASKS.md not found. Run /sdlc-kit:task to create it.';
     board.style.display = 'none';
     empty.style.display = 'flex';
     return;
@@ -781,7 +795,7 @@ function buildKanbanCard(task) {
 
   const titleEl = document.createElement('div');
   titleEl.className = 'card-title';
-  titleEl.textContent = task.title || '(sem título)';
+  titleEl.textContent = task.title || '(untitled)';
   card.appendChild(titleEl);
 
   const meta = document.createElement('div');
@@ -855,7 +869,7 @@ function renderBranchGraph(tasks) {
 
     const prHint = document.createElement('div');
     prHint.className = 'branch-pr-hint';
-    prHint.textContent = 'PR status disponível após sync';
+    prHint.textContent = 'PR status available after sync';
 
     lane.appendChild(nameEl);
     lane.appendChild(barWrap);
@@ -907,13 +921,13 @@ async function renderEpics() {
   container.innerHTML = '';
 
   if (!rootHandle) {
-    container.innerHTML = '<p style="color:var(--text-sec)">Abra um vault para visualizar os épicos.</p>';
+    container.innerHTML = '<p style="color:var(--text-sec)">Open a vault to view the epics.</p>';
     return;
   }
 
   const text = await readFileFromVault(['03-development', 'EPICS.md']);
   if (!text) {
-    container.innerHTML = '<p style="color:var(--text-sec); font-size:0.92rem;">Nenhum épico criado ainda. Execute <code>/sdlc-kit:epic</code> para começar.</p>';
+    container.innerHTML = '<p style="color:var(--text-sec); font-size:0.92rem;">No epics yet. Run <code>/sdlc-kit:epic</code> to get started.</p>';
     return;
   }
 
@@ -921,13 +935,13 @@ async function renderEpics() {
   const epics = parseEpicSections(body);
 
   if (epics.length === 0) {
-    container.innerHTML = '<p style="color:var(--text-sec); font-size:0.92rem;">Nenhum épico criado ainda. Execute <code>/sdlc-kit:epic</code> para começar.</p>';
+    container.innerHTML = '<p style="color:var(--text-sec); font-size:0.92rem;">No epics yet. Run <code>/sdlc-kit:epic</code> to get started.</p>';
     return;
   }
 
   const title = document.createElement('h2');
   title.style.cssText = 'font-size:1.2rem;margin-bottom:1rem;color:var(--text);';
-  title.textContent = 'Épicos';
+  title.textContent = 'Epics';
   container.appendChild(title);
 
   for (const epic of epics) {
@@ -953,7 +967,7 @@ async function renderEpics() {
     }
     const pct = parseInt(epic.progress) || 0;
     const prog = document.createElement('span');
-    prog.textContent = 'Progresso: ' + pct + '%';
+    prog.textContent = 'Progress: ' + pct + '%';
     meta.appendChild(prog);
 
     card.appendChild(meta);
@@ -982,13 +996,13 @@ async function renderMilestones() {
   container.innerHTML = '';
 
   if (!rootHandle) {
-    container.innerHTML = '<p style="color:var(--text-sec)">Abra um vault para visualizar os milestones.</p>';
+    container.innerHTML = '<p style="color:var(--text-sec)">Open a vault to view the milestones.</p>';
     return;
   }
 
   const text = await readFileFromVault(['03-development', 'MILESTONES.md']);
   if (!text) {
-    container.innerHTML = '<p style="color:var(--text-sec); font-size:0.92rem;">Nenhum milestone criado ainda. Execute <code>/sdlc-kit:milestone</code> para começar.</p>';
+    container.innerHTML = '<p style="color:var(--text-sec); font-size:0.92rem;">No milestones yet. Run <code>/sdlc-kit:milestone</code> to get started.</p>';
     return;
   }
 
@@ -996,7 +1010,7 @@ async function renderMilestones() {
   const milestones = parseMilestoneSections(body);
 
   if (milestones.length === 0) {
-    container.innerHTML = '<p style="color:var(--text-sec); font-size:0.92rem;">Nenhum milestone criado ainda. Execute <code>/sdlc-kit:milestone</code> para começar.</p>';
+    container.innerHTML = '<p style="color:var(--text-sec); font-size:0.92rem;">No milestones yet. Run <code>/sdlc-kit:milestone</code> to get started.</p>';
     return;
   }
 
@@ -1027,14 +1041,14 @@ async function renderMilestones() {
     }
     if (ms.epics) {
       const ep = document.createElement('span');
-      ep.textContent = 'Épicos: ' + ms.epics;
+      ep.textContent = 'Epics: ' + ms.epics;
       meta.appendChild(ep);
     }
     const pct = parseInt(ms.progress) || 0;
     const prog = document.createElement('span');
     const ragClass = ragToClass(ms.rag);
     if (ragClass) prog.classList.add(ragClass);
-    prog.textContent = 'Progresso: ' + pct + '%';
+    prog.textContent = 'Progress: ' + pct + '%';
     meta.appendChild(prog);
 
     card.appendChild(meta);
@@ -1045,7 +1059,7 @@ async function renderMilestones() {
     barFill.className = 'progress-bar-fill';
     barFill.style.width = pct + '%';
     if (ms.rag === 'red') barFill.style.background = 'var(--danger)';
-    else if (ms.rag === 'amber') barFill.style.background = '#fd7e14';
+    else if (ms.rag === 'amber') barFill.style.background = 'var(--warning)';
     else barFill.style.background = 'var(--success)';
     barWrap.appendChild(barFill);
     card.appendChild(barWrap);
@@ -1062,17 +1076,17 @@ function parseEpicSections(body) {
   const lines = body.split('\n');
   let current = null;
   for (const line of lines) {
-    if (line.startsWith('## ') && !line.startsWith('## Épicos')) {
+    if (line.startsWith('## ') && !/^## (Epics|Épicos)\b/.test(line)) {
       if (current) epics.push(current);
       current = { name: line.slice(3).trim(), milestone: '', description: '', created: '', progress: '0' };
     } else if (current) {
       const milMatch = line.match(/\*\*Milestone:\*\*\s*(.*)/);
       if (milMatch) current.milestone = milMatch[1].trim();
-      const descMatch = line.match(/\*\*Descrição:\*\*\s*(.*)/);
+      const descMatch = line.match(/\*\*(?:Description|Descrição):\*\*\s*(.*)/);
       if (descMatch) current.description = descMatch[1].trim();
       const crMatch = line.match(/\*\*Criado:\*\*\s*(.*)/);
       if (crMatch) current.created = crMatch[1].trim();
-      const progMatch = line.match(/\*\*Progresso:\*\*\s*(\d+)%/);
+      const progMatch = line.match(/\*\*(?:Progress|Progresso):\*\*\s*(\d+)%/);
       if (progMatch) current.progress = progMatch[1];
     }
   }
@@ -1098,9 +1112,9 @@ function parseMilestoneSections(body) {
       }
       const dtMatch = line.match(/\*\*Data-alvo:\*\*\s*(.*)/);
       if (dtMatch) current.targetDate = dtMatch[1].trim();
-      const epMatch = line.match(/\*\*Épicos:\*\*\s*(.*)/);
+      const epMatch = line.match(/\*\*(?:Epics|Épicos):\*\*\s*(.*)/);
       if (epMatch) current.epics = epMatch[1].trim();
-      const progMatch = line.match(/\*\*Progresso:\*\*\s*(\d+)%/);
+      const progMatch = line.match(/\*\*(?:Progress|Progresso):\*\*\s*(\d+)%/);
       if (progMatch) current.progress = progMatch[1];
     }
   }

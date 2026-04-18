@@ -1,25 +1,24 @@
-"""Tests for Phase 4 skills: domain, c4, design-system, trace, impact."""
+"""Tests for phase-4 skills: sdlc-domain, sdlc-c4, sdlc-design-system,
+sdlc-trace, sdlc-impact.
+
+All tests exercise the canonical `--action list|scaffold|transition`
+contract (`analyze` for impact, `report` for trace). Skill scripts are
+invoked as subprocesses so their stdin/stdout contract and exit codes are
+validated end-to-end.
+"""
+from __future__ import annotations
+
 import json
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
 
-SKILLS_DIR = Path(__file__).parent.parent / "skills"
-CORE_DIR = Path(__file__).parent.parent
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def run_script(script_path: Path, args: list[str]) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [sys.executable, str(script_path)] + args,
-        capture_output=True,
-        text=True,
-    )
+from tests._skill_helpers import (
+    make_vault,
+    parse_json,
+    read_frontmatter,
+    run_script,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -27,145 +26,180 @@ def run_script(script_path: Path, args: list[str]) -> subprocess.CompletedProces
 # ---------------------------------------------------------------------------
 
 class TestDomainSkill:
-    SCRIPT = SKILLS_DIR / "sdlc-domain" / "scripts" / "domain.py"
+    SCRIPT = "sdlc-domain/scripts/domain.py"
 
-    def test_create_context_dry_run(self, vault_dir):
-        result = run_script(self.SCRIPT, [
-            "--action", "create-context",
-            "--context-name", "Order Management",
-            "--vault-root", str(vault_dir),
-            "--dry-run",
-        ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["status"] == "dry-run"
-        assert data["slug"] == "order-management"
-        assert len(data["files"]) == 2
+    def _vault(self, tmp_path: Path) -> Path:
+        return make_vault(tmp_path, "03-domain")
 
-    def test_create_context_creates_files(self, vault_dir):
-        result = run_script(self.SCRIPT, [
-            "--action", "create-context",
-            "--context-name", "Order Management",
-            "--vault-root", str(vault_dir),
-        ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
+    # --- list ---
+    def test_list_empty(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, ["--vault-root", str(vault), "--action", "list"])
+        assert cp.returncode == 0, cp.stderr
+        data = parse_json(cp)
         assert data["status"] == "ok"
-        assert len(data["created"]) == 2
+        assert data["action"] == "list"
+        assert data["count"] == 0
+        assert data["artifacts"] == []
 
-        context_dir = vault_dir / "04-domain" / "order-management"
-        assert (context_dir / "context-map.md").exists()
-        assert (context_dir / "ubiquitous-language.md").exists()
+    def test_list_filters_by_kind(self, tmp_path):
+        vault = self._vault(tmp_path)
+        run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "aggregate", "--slug", "order", "--title", "Order",
+        ])
+        run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "event", "--slug", "order-created", "--title", "OrderCreated",
+        ])
 
-    def test_create_context_idempotent(self, vault_dir):
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "list", "--kind", "aggregate",
+        ])
+        data = parse_json(cp)
+        assert data["count"] == 1
+        assert data["artifacts"][0]["kind"] == "aggregate"
+        assert data["artifacts"][0]["slug"] == "order"
+
+    # --- scaffold ---
+    def test_scaffold_collection_creates_file(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "aggregate", "--slug", "order", "--title", "Order", "--owner", "tech-lead",
+        ])
+        assert cp.returncode == 0, cp.stderr
+        data = parse_json(cp)
+        assert data["status"] == "ok"
+        assert data["kind"] == "aggregate"
+        assert data["slug"] == "order"
+        assert data["was_new"] is True
+
+        target = vault / "03-domain" / "aggregates" / "order.md"
+        assert target.exists()
+        fm = read_frontmatter(target)
+        assert fm["slug"] == "order"
+        assert fm["status"] == "draft"
+        assert fm["owner"] == "tech-lead"
+
+    def test_scaffold_singleton_context_map(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "context-map",
+        ])
+        assert cp.returncode == 0, cp.stderr
+        data = parse_json(cp)
+        assert data["slug"] == "context-map"
+        assert data["artifact_path"].endswith("context-map.md")
+        assert (vault / "03-domain" / "context-map.md").exists()
+
+    def test_scaffold_singleton_rejects_slug(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "context-map", "--slug", "should-fail",
+        ])
+        assert cp.returncode == 1
+        data = parse_json(cp)
+        assert data["status"] == "error"
+        assert any("singleton" in e for e in data["errors"])
+
+    def test_scaffold_collection_requires_slug(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "aggregate", "--title", "Missing Slug",
+        ])
+        assert cp.returncode == 1
+        data = parse_json(cp)
+        assert any("requires --slug" in e for e in data["errors"])
+
+    def test_scaffold_collision_without_force(self, tmp_path):
+        vault = self._vault(tmp_path)
         args = [
-            "--action", "create-context",
-            "--context-name", "Order Management",
-            "--vault-root", str(vault_dir),
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "aggregate", "--slug", "order", "--title", "Order",
         ]
         run_script(self.SCRIPT, args)
-        result = run_script(self.SCRIPT, args)
-        data = json.loads(result.stdout)
-        assert data["status"] == "ok"
-        # Second run: nothing created (files already exist)
-        assert data["created"] == []
+        cp = run_script(self.SCRIPT, args)
+        assert cp.returncode == 1
+        data = parse_json(cp)
+        assert any("already exists" in e for e in data["errors"])
 
-    def test_create_context_frontmatter(self, vault_dir):
+    def test_scaffold_collision_with_force(self, tmp_path):
+        vault = self._vault(tmp_path)
         run_script(self.SCRIPT, [
-            "--action", "create-context",
-            "--context-name", "Payments",
-            "--vault-root", str(vault_dir),
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "aggregate", "--slug", "order", "--title", "Order",
         ])
-        context_map = (vault_dir / "04-domain" / "payments" / "context-map.md").read_text()
-        assert "type: context-map" in context_map
-        assert "status: draft" in context_map
-        assert 'phase: "04"' in context_map
-
-    def test_add_event_creates_file(self, vault_dir):
-        result = run_script(self.SCRIPT, [
-            "--action", "add-event",
-            "--context-name", "Orders",
-            "--event-name", "OrderPlaced",
-            "--vault-root", str(vault_dir),
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "aggregate", "--slug", "order", "--title", "Order v2", "--force",
         ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["status"] == "ok"
+        assert cp.returncode == 0, cp.stderr
 
-        events_file = vault_dir / "04-domain" / "orders" / "domain-events.md"
-        assert events_file.exists()
-        content = events_file.read_text()
-        assert "## OrderPlaced" in content
-        assert "**Trigger:**" in content
-        assert "**Payload:**" in content
-
-    def test_add_event_appends(self, vault_dir):
-        base_args = ["--action", "add-event", "--context-name", "Orders", "--vault-root", str(vault_dir)]
-        run_script(self.SCRIPT, base_args + ["--event-name", "OrderPlaced"])
-        run_script(self.SCRIPT, base_args + ["--event-name", "OrderCancelled"])
-
-        content = (vault_dir / "04-domain" / "orders" / "domain-events.md").read_text()
-        assert "## OrderPlaced" in content
-        assert "## OrderCancelled" in content
-
-    def test_add_event_dry_run(self, vault_dir):
-        result = run_script(self.SCRIPT, [
-            "--action", "add-event",
-            "--context-name", "Orders",
-            "--event-name", "OrderPlaced",
-            "--vault-root", str(vault_dir),
-            "--dry-run",
+    def test_scaffold_invalid_slug(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "aggregate", "--slug", "Bad_Slug", "--title", "X",
         ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["status"] == "dry-run"
-        # File should NOT be created
-        assert not (vault_dir / "04-domain" / "orders" / "domain-events.md").exists()
+        assert cp.returncode == 1
+        data = parse_json(cp)
+        assert any("invalid slug" in e for e in data["errors"])
 
-    def test_list_contexts_empty(self, vault_dir):
-        result = run_script(self.SCRIPT, [
-            "--action", "list-contexts",
-            "--vault-root", str(vault_dir),
+    # --- transition ---
+    def test_transition_flips_status(self, tmp_path):
+        vault = self._vault(tmp_path)
+        run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "aggregate", "--slug", "order", "--title", "Order",
         ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["status"] == "ok"
-        assert data["contexts"] == []
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "transition",
+            "--kind", "aggregate", "--slug", "order", "--to", "approved",
+        ])
+        assert cp.returncode == 0, cp.stderr
+        data = parse_json(cp)
+        assert data["previous_status"] == "draft"
+        assert data["new_status"] == "approved"
 
-    def test_list_contexts_excludes_templates(self, vault_dir):
-        (vault_dir / "04-domain" / "_templates").mkdir(parents=True)
-        (vault_dir / "04-domain" / "payments").mkdir(parents=True)
-        result = run_script(self.SCRIPT, [
-            "--action", "list-contexts",
-            "--vault-root", str(vault_dir),
-        ])
-        data = json.loads(result.stdout)
-        assert "_templates" not in data["contexts"]
-        assert "payments" in data["contexts"]
+        fm = read_frontmatter(vault / "03-domain" / "aggregates" / "order.md")
+        assert fm["status"] == "approved"
 
-    def test_missing_vault(self, tmp_path):
-        result = run_script(self.SCRIPT, [
-            "--action", "list-contexts",
-            "--vault-root", str(tmp_path),
+    def test_transition_idempotent(self, tmp_path):
+        vault = self._vault(tmp_path)
+        run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "aggregate", "--slug", "order", "--title", "Order",
         ])
-        assert result.returncode == 2
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "transition",
+            "--kind", "aggregate", "--slug", "order", "--to", "draft",
+        ])
+        assert cp.returncode == 0, cp.stderr
+        data = parse_json(cp)
+        assert data["previous_status"] == "draft"
+        assert data["new_status"] == "draft"
 
-    def test_create_context_missing_name(self, vault_dir):
-        result = run_script(self.SCRIPT, [
-            "--action", "create-context",
-            "--vault-root", str(vault_dir),
+    def test_transition_unknown_slug(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "transition",
+            "--kind", "aggregate", "--slug", "ghost", "--to", "approved",
         ])
-        assert result.returncode == 1
+        assert cp.returncode == 1
+        data = parse_json(cp)
+        assert any("not found" in e for e in data["errors"])
 
-    def test_slugify_special_chars(self, vault_dir):
-        result = run_script(self.SCRIPT, [
-            "--action", "create-context",
-            "--context-name", "User Auth & Session",
-            "--vault-root", str(vault_dir),
+    def test_not_a_vault(self, tmp_path):
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(tmp_path), "--action", "list",
         ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["slug"] == "user-auth--session"
+        assert cp.returncode == 1
+        data = parse_json(cp)
+        assert any("not a vault" in e for e in data["errors"])
 
 
 # ---------------------------------------------------------------------------
@@ -173,95 +207,118 @@ class TestDomainSkill:
 # ---------------------------------------------------------------------------
 
 class TestC4Skill:
-    SCRIPT = SKILLS_DIR / "sdlc-c4" / "scripts" / "c4.py"
+    SCRIPT = "sdlc-c4/scripts/c4.py"
 
-    @pytest.mark.parametrize("level", ["context", "container", "component"])
-    def test_create_diagram_dry_run(self, vault_dir, level):
-        result = run_script(self.SCRIPT, [
-            "--level", level,
-            "--system-name", "My Platform",
-            "--vault-root", str(vault_dir),
-            "--dry-run",
+    def _vault(self, tmp_path: Path) -> Path:
+        return make_vault(tmp_path, "02-architecture")
+
+    def test_list_empty(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, ["--vault-root", str(vault), "--action", "list"])
+        assert cp.returncode == 0, cp.stderr
+        data = parse_json(cp)
+        assert data["count"] == 0
+
+    def test_scaffold_context_singleton(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold", "--kind", "context",
         ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["status"] == "dry-run"
-        assert data["level"] == level
+        assert cp.returncode == 0, cp.stderr
+        data = parse_json(cp)
+        assert data["slug"] == "context"
+        target = vault / "02-architecture" / "c4" / "context.md"
+        assert target.exists()
+        fm = read_frontmatter(target)
+        assert fm["status"] == "draft"
 
-    @pytest.mark.parametrize("level", ["context", "container", "component"])
-    def test_create_diagram_creates_file(self, vault_dir, level):
-        result = run_script(self.SCRIPT, [
-            "--level", level,
-            "--system-name", "My Platform",
-            "--vault-root", str(vault_dir),
+    def test_scaffold_component_requires_slug(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold", "--kind", "component",
+            "--title", "No Slug",
         ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["status"] == "ok"
+        assert cp.returncode == 1
+        data = parse_json(cp)
+        assert any("requires --slug" in e for e in data["errors"])
 
-        dest = vault_dir / "02-architecture" / f"c4-{level}-my-platform.md"
-        assert dest.exists()
+    def test_scaffold_component_creates_file(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold", "--kind", "component",
+            "--slug", "auth-service", "--title", "Auth Service",
+        ])
+        assert cp.returncode == 0, cp.stderr
+        target = vault / "02-architecture" / "c4" / "components" / "auth-service.md"
+        assert target.exists()
 
-    def test_create_diagram_frontmatter(self, vault_dir):
+    def test_scaffold_singleton_rejects_slug(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "context", "--slug", "ignored",
+        ])
+        assert cp.returncode == 1
+
+    def test_list_after_scaffold(self, tmp_path):
+        vault = self._vault(tmp_path)
         run_script(self.SCRIPT, [
-            "--level", "context",
-            "--system-name", "My Platform",
-            "--vault-root", str(vault_dir),
+            "--vault-root", str(vault), "--action", "scaffold", "--kind", "context",
         ])
-        content = (vault_dir / "02-architecture" / "c4-context-my-platform.md").read_text()
-        assert "type: c4-diagram" in content
-        assert "level: context" in content
-        assert "status: draft" in content
-        assert 'phase: "02"' in content
-
-    def test_create_diagram_contains_mermaid(self, vault_dir):
         run_script(self.SCRIPT, [
-            "--level", "context",
-            "--system-name", "My Platform",
-            "--vault-root", str(vault_dir),
+            "--vault-root", str(vault), "--action", "scaffold", "--kind", "component",
+            "--slug", "billing", "--title", "Billing",
         ])
-        content = (vault_dir / "02-architecture" / "c4-context-my-platform.md").read_text()
-        assert "```mermaid" in content
-        assert "C4Context" in content
+        cp = run_script(self.SCRIPT, ["--vault-root", str(vault), "--action", "list"])
+        data = parse_json(cp)
+        # context singleton + billing component
+        assert data["count"] == 2
+        kinds = {d["kind"] for d in data["diagrams"]}
+        assert kinds == {"context", "component"}
 
-    def test_container_diagram_mermaid(self, vault_dir):
+    def test_list_kind_filter(self, tmp_path):
+        vault = self._vault(tmp_path)
         run_script(self.SCRIPT, [
-            "--level", "container",
-            "--system-name", "My Platform",
-            "--vault-root", str(vault_dir),
+            "--vault-root", str(vault), "--action", "scaffold", "--kind", "context",
         ])
-        content = (vault_dir / "02-architecture" / "c4-container-my-platform.md").read_text()
-        assert "C4Container" in content
-
-    def test_component_diagram_mermaid(self, vault_dir):
         run_script(self.SCRIPT, [
-            "--level", "component",
-            "--system-name", "My Platform",
-            "--vault-root", str(vault_dir),
+            "--vault-root", str(vault), "--action", "scaffold", "--kind", "component",
+            "--slug", "billing", "--title", "Billing",
         ])
-        content = (vault_dir / "02-architecture" / "c4-component-my-platform.md").read_text()
-        assert "C4Component" in content
-
-    def test_duplicate_diagram_exits_1(self, vault_dir):
-        args = [
-            "--level", "context",
-            "--system-name", "My Platform",
-            "--vault-root", str(vault_dir),
-        ]
-        run_script(self.SCRIPT, args)
-        result = run_script(self.SCRIPT, args)
-        assert result.returncode == 1
-        data = json.loads(result.stdout)
-        assert data["status"] == "error"
-        assert "already exists" in data["message"]
-
-    def test_missing_vault(self, tmp_path):
-        result = run_script(self.SCRIPT, [
-            "--level", "context",
-            "--system-name", "Test",
-            "--vault-root", str(tmp_path),
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "list", "--kind", "component",
         ])
-        assert result.returncode == 2
+        data = parse_json(cp)
+        assert data["count"] == 1
+        assert data["diagrams"][0]["slug"] == "billing"
+
+    def test_transition_component(self, tmp_path):
+        vault = self._vault(tmp_path)
+        run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold", "--kind", "component",
+            "--slug", "billing", "--title", "Billing",
+        ])
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "transition",
+            "--kind", "component", "--slug", "billing", "--to", "approved",
+        ])
+        assert cp.returncode == 0, cp.stderr
+        data = parse_json(cp)
+        assert data["new_status"] == "approved"
+        fm = read_frontmatter(vault / "02-architecture" / "c4" / "components" / "billing.md")
+        assert fm["status"] == "approved"
+
+    def test_transition_unknown_slug(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "transition",
+            "--kind", "component", "--slug", "ghost", "--to", "approved",
+        ])
+        assert cp.returncode == 1
+
+    def test_not_a_vault(self, tmp_path):
+        cp = run_script(self.SCRIPT, ["--vault-root", str(tmp_path), "--action", "list"])
+        assert cp.returncode == 1
 
 
 # ---------------------------------------------------------------------------
@@ -269,360 +326,318 @@ class TestC4Skill:
 # ---------------------------------------------------------------------------
 
 class TestDesignSystemSkill:
-    SCRIPT = SKILLS_DIR / "sdlc-design-system" / "scripts" / "design_system.py"
+    SCRIPT = "sdlc-design-system/scripts/design_system.py"
 
-    def test_init_dry_run(self, vault_dir):
-        result = run_script(self.SCRIPT, [
-            "--action", "init",
-            "--vault-root", str(vault_dir),
-            "--dry-run",
+    def _vault(self, tmp_path: Path) -> Path:
+        return make_vault(tmp_path, "06-design-system")
+
+    def test_list_empty(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, ["--vault-root", str(vault), "--action", "list"])
+        assert cp.returncode == 0, cp.stderr
+        data = parse_json(cp)
+        assert data["count"] == 0
+
+    def test_scaffold_token(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "token", "--slug", "color-primary-500", "--title", "Primary 500",
         ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["status"] == "dry-run"
-        assert "tokens.md" in data["files"]
+        assert cp.returncode == 0, cp.stderr
+        target = vault / "06-design-system" / "tokens" / "color-primary-500.md"
+        assert target.exists()
+        fm = read_frontmatter(target)
+        assert fm["slug"] == "color-primary-500"
+        assert fm["status"] == "draft"
 
-    def test_init_creates_files(self, vault_dir):
-        result = run_script(self.SCRIPT, [
-            "--action", "init",
-            "--vault-root", str(vault_dir),
+    def test_scaffold_component(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "component", "--slug", "button", "--title", "Button",
         ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["status"] == "ok"
-        assert "tokens.md" in data["created"]
-        assert "components.md" in data["created"]
-        assert "patterns.md" in data["created"]
+        assert cp.returncode == 0
+        assert (vault / "06-design-system" / "components" / "button.md").exists()
 
-        assert (vault_dir / "06-design-system" / "tokens.md").exists()
-        assert (vault_dir / "06-design-system" / "components.md").exists()
-        assert (vault_dir / "06-design-system" / "patterns.md").exists()
-
-    def test_init_idempotent(self, vault_dir):
-        run_script(self.SCRIPT, ["--action", "init", "--vault-root", str(vault_dir)])
-        result = run_script(self.SCRIPT, ["--action", "init", "--vault-root", str(vault_dir)])
-        data = json.loads(result.stdout)
-        assert data["status"] == "ok"
-        assert data["created"] == []
-        assert set(data["skipped"]) == {"tokens.md", "components.md", "patterns.md"}
-
-    def test_init_frontmatter(self, vault_dir):
-        run_script(self.SCRIPT, ["--action", "init", "--vault-root", str(vault_dir)])
-        content = (vault_dir / "06-design-system" / "tokens.md").read_text()
-        assert "type: design-tokens" in content
-        assert "status: draft" in content
-        assert 'phase: "06"' in content
-
-    def test_add_token_dry_run(self, vault_dir):
-        result = run_script(self.SCRIPT, [
-            "--action", "add-token",
-            "--name", "primary-color",
-            "--category", "color",
-            "--value", "#1A73E8",
-            "--vault-root", str(vault_dir),
-            "--dry-run",
+    def test_scaffold_pattern(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "pattern", "--slug", "empty-state", "--title", "Empty State",
         ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["status"] == "dry-run"
-        assert not (vault_dir / "06-design-system" / "tokens.md").exists()
+        assert cp.returncode == 0
+        assert (vault / "06-design-system" / "patterns" / "empty-state.md").exists()
 
-    def test_add_token_appends_row(self, vault_dir):
-        run_script(self.SCRIPT, ["--action", "init", "--vault-root", str(vault_dir)])
+    def test_scaffold_invalid_slug(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "token", "--slug", "Bad_Slug", "--title", "Bad",
+        ])
+        assert cp.returncode == 1
+
+    def test_list_kind_filter(self, tmp_path):
+        vault = self._vault(tmp_path)
         run_script(self.SCRIPT, [
-            "--action", "add-token",
-            "--name", "primary-color",
-            "--category", "color",
-            "--value", "#1A73E8",
-            "--vault-root", str(vault_dir),
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "token", "--slug", "spacing-4", "--title", "Spacing 4",
         ])
-        content = (vault_dir / "06-design-system" / "tokens.md").read_text()
-        assert "| primary-color | color | #1A73E8 |" in content
-
-    def test_add_token_creates_tokens_if_missing(self, vault_dir):
-        result = run_script(self.SCRIPT, [
-            "--action", "add-token",
-            "--name", "spacing-sm",
-            "--category", "spacing",
-            "--value", "8px",
-            "--vault-root", str(vault_dir),
-        ])
-        assert result.returncode == 0
-        assert (vault_dir / "06-design-system" / "tokens.md").exists()
-
-    def test_add_token_missing_args(self, vault_dir):
-        result = run_script(self.SCRIPT, [
-            "--action", "add-token",
-            "--name", "primary-color",
-            "--vault-root", str(vault_dir),
-        ])
-        assert result.returncode == 1
-
-    def test_add_component_dry_run(self, vault_dir):
-        result = run_script(self.SCRIPT, [
-            "--action", "add-component",
-            "--name", "Button",
-            "--vault-root", str(vault_dir),
-            "--dry-run",
-        ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["status"] == "dry-run"
-
-    def test_add_component_appends_entry(self, vault_dir):
-        run_script(self.SCRIPT, ["--action", "init", "--vault-root", str(vault_dir)])
         run_script(self.SCRIPT, [
-            "--action", "add-component",
-            "--name", "Button",
-            "--vault-root", str(vault_dir),
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "component", "--slug", "card", "--title", "Card",
         ])
-        content = (vault_dir / "06-design-system" / "components.md").read_text()
-        assert "## Button" in content
-        assert "**Status:** draft" in content
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "list", "--kind", "component",
+        ])
+        data = parse_json(cp)
+        assert data["count"] == 1
+        assert data["entries"][0]["slug"] == "card"
 
-    def test_add_component_missing_name(self, vault_dir):
-        result = run_script(self.SCRIPT, [
-            "--action", "add-component",
-            "--vault-root", str(vault_dir),
+    def test_transition_draft_to_stable(self, tmp_path):
+        vault = self._vault(tmp_path)
+        run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "token", "--slug", "spacing-4", "--title", "Spacing 4",
         ])
-        assert result.returncode == 1
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "transition",
+            "--kind", "token", "--slug", "spacing-4", "--to", "stable",
+        ])
+        assert cp.returncode == 0, cp.stderr
+        data = parse_json(cp)
+        assert data["new_status"] == "stable"
+        fm = read_frontmatter(vault / "06-design-system" / "tokens" / "spacing-4.md")
+        assert fm["status"] == "stable"
 
-    def test_missing_vault(self, tmp_path):
-        result = run_script(self.SCRIPT, [
-            "--action", "init",
-            "--vault-root", str(tmp_path),
+    def test_transition_idempotent(self, tmp_path):
+        vault = self._vault(tmp_path)
+        run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "token", "--slug", "spacing-4", "--title", "Spacing 4",
         ])
-        assert result.returncode == 2
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "transition",
+            "--kind", "token", "--slug", "spacing-4", "--to", "draft",
+        ])
+        data = parse_json(cp)
+        assert data["previous_status"] == "draft"
+        assert data["new_status"] == "draft"
+
+    def test_scaffold_collision_without_force(self, tmp_path):
+        vault = self._vault(tmp_path)
+        args = [
+            "--vault-root", str(vault), "--action", "scaffold",
+            "--kind", "token", "--slug", "x", "--title", "X",
+        ]
+        run_script(self.SCRIPT, args)
+        cp = run_script(self.SCRIPT, args)
+        assert cp.returncode == 1
+
+    def test_not_a_vault(self, tmp_path):
+        cp = run_script(self.SCRIPT, ["--vault-root", str(tmp_path), "--action", "list"])
+        assert cp.returncode == 1
 
 
 # ---------------------------------------------------------------------------
-# sdlc-trace
+# sdlc-trace (single read-only `report` action)
 # ---------------------------------------------------------------------------
+
+def _write_note(vault: Path, rel: str, frontmatter: dict, body: str = "") -> Path:
+    path = vault / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = ["---"]
+    for k, v in frontmatter.items():
+        lines.append(f'{k}: "{v}"' if isinstance(v, str) else f"{k}: {v}")
+    lines.append("---")
+    lines.append("")
+    lines.append(body)
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path
+
 
 class TestTraceSkill:
-    SCRIPT = SKILLS_DIR / "sdlc-trace" / "scripts" / "trace.py"
+    SCRIPT = "sdlc-trace/scripts/trace.py"
 
-    def _setup_spec(self, vault_dir: Path, slug: str = "my-feature"):
-        spec_dir = vault_dir / "03-development" / slug
-        spec_dir.mkdir(parents=True, exist_ok=True)
-        (spec_dir / "requirements.md").write_text(
-            "# Requirements\n\n"
-            "The system SHALL validate user input.\n"
-            "WHEN the user submits a form, the system SHALL check all required fields.\n"
-            "The system SHALL return an error if validation fails.\n",
-            encoding="utf-8",
-        )
-        (spec_dir / "design.md").write_text("# Design\n\nSee architecture docs.\n", encoding="utf-8")
-        (spec_dir / "tasks.md").write_text(
-            "# Tasks\n\n"
-            "- [ ] Implement form validation\n"
-            "- [x] Write unit tests\n"
-            "- [ ] Add error messages\n",
-            encoding="utf-8",
-        )
-        return spec_dir
+    def _vault(self, tmp_path: Path) -> Path:
+        # trace only requires the marker — it walks whatever phase folders
+        # exist. We still seed a couple to make the walk meaningful.
+        vault = make_vault(tmp_path, "01-planning", "04-specs", "02-architecture",
+                           "07-retrospectives")
+        return vault
 
-    def test_trace_dry_run(self, vault_dir):
-        self._setup_spec(vault_dir)
-        result = run_script(self.SCRIPT, [
-            "--spec-slug", "my-feature",
-            "--vault-root", str(vault_dir),
-            "--dry-run",
+    def test_empty_report_json(self, tmp_path):
+        vault = self._vault(tmp_path)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "report",
         ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["status"] == "dry-run"
-        assert data["requirements_found"] == 3
-        assert not (vault_dir / "03-development" / "my-feature" / "traceability.md").exists()
-
-    def test_trace_creates_file(self, vault_dir):
-        self._setup_spec(vault_dir)
-        result = run_script(self.SCRIPT, [
-            "--spec-slug", "my-feature",
-            "--vault-root", str(vault_dir),
-        ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
+        assert cp.returncode == 0, cp.stderr
+        data = parse_json(cp)
         assert data["status"] == "ok"
-        assert data["requirements_found"] == 3
-        assert data["tasks_found"] == 3
+        assert data["action"] == "report"
+        assert data["format"] == "json"
+        assert data["features"] == []
+        assert data["orphan_adrs"] == []
+        assert data["orphan_trds"] == []
 
-        trace_path = vault_dir / "03-development" / "my-feature" / "traceability.md"
-        assert trace_path.exists()
+    def test_full_chain_is_complete(self, tmp_path):
+        vault = self._vault(tmp_path)
+        _write_note(vault, "01-planning/prds/feat-a.md",
+                    {"type": "prd", "slug": "feat-a", "title": "Feat A"},
+                    "Links: [[feat-a-requirements]]")
+        _write_note(vault, "04-specs/feat-a/feat-a-requirements.md",
+                    {"type": "spec-requirements", "slug": "feat-a", "title": "Req"},
+                    "See [[feat-a]]")
+        _write_note(vault, "04-specs/feat-a/feat-a-design.md",
+                    {"type": "spec-design", "slug": "feat-a", "title": "Des"},
+                    "Based on [[feat-a]]")
+        _write_note(vault, "04-specs/feat-a/feat-a-tasks.md",
+                    {"type": "spec-tasks", "slug": "feat-a", "title": "Tasks"},
+                    "- [ ] do thing\n- [x] done\n")
 
-    def test_trace_table_content(self, vault_dir):
-        self._setup_spec(vault_dir)
-        run_script(self.SCRIPT, [
-            "--spec-slug", "my-feature",
-            "--vault-root", str(vault_dir),
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "report",
         ])
-        content = (vault_dir / "03-development" / "my-feature" / "traceability.md").read_text()
-        assert "| Requirement | Design Ref | Task | Status |" in content
-        assert "SHALL" in content
-        assert "design.md" in content
-        assert "open" in content
+        assert cp.returncode == 0, cp.stderr
+        data = parse_json(cp)
+        assert len(data["features"]) == 1
+        row = data["features"][0]
+        assert row["slug"] == "feat-a"
+        assert row["coverage_status"] == "complete"
+        assert row["requirements"]["exists"] is True
+        assert row["design"]["exists"] is True
+        assert row["tasks"]["exists"] is True
+        assert row["tasks"]["task_count"] == 2
+        assert row["prd_refs"] == ["feat-a"]
 
-    def test_trace_frontmatter(self, vault_dir):
-        self._setup_spec(vault_dir)
-        run_script(self.SCRIPT, [
-            "--spec-slug", "my-feature",
-            "--vault-root", str(vault_dir),
+    def test_partial_coverage_and_markdown(self, tmp_path):
+        vault = self._vault(tmp_path)
+        # only requirements — no design, no tasks, no PRD
+        _write_note(vault, "04-specs/solo/solo-requirements.md",
+                    {"type": "spec-requirements", "slug": "solo", "title": "Solo"}, "")
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "report", "--format", "markdown",
         ])
-        content = (vault_dir / "03-development" / "my-feature" / "traceability.md").read_text()
-        assert "type: traceability" in content
-        assert 'phase: "03"' in content
+        assert cp.returncode == 0, cp.stderr
+        data = parse_json(cp)
+        assert data["format"] == "markdown"
+        assert "markdown" in data
+        assert "Traceability report" in data["markdown"]
+        # In markdown format, features are not carried through (see docstring).
+        assert "features" not in data
 
-    def test_trace_missing_spec_dir(self, vault_dir):
-        result = run_script(self.SCRIPT, [
-            "--spec-slug", "nonexistent",
-            "--vault-root", str(vault_dir),
+    def test_orphan_adr(self, tmp_path):
+        vault = self._vault(tmp_path)
+        _write_note(vault, "02-architecture/adr/adr-0001-x.md",
+                    {"type": "adr", "slug": "adr-0001", "title": "ADR"}, "")
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "report",
         ])
-        assert result.returncode == 1
-        data = json.loads(result.stdout)
-        assert data["status"] == "error"
+        data = parse_json(cp)
+        assert "adr-0001-x" in data["orphan_adrs"]
 
-    def test_trace_missing_requirements(self, vault_dir):
-        spec_dir = vault_dir / "03-development" / "no-reqs"
-        spec_dir.mkdir(parents=True)
-        result = run_script(self.SCRIPT, [
-            "--spec-slug", "no-reqs",
-            "--vault-root", str(vault_dir),
-        ])
-        assert result.returncode == 1
-        data = json.loads(result.stdout)
-        assert data["status"] == "error"
-        assert "requirements.md" in data["message"]
-
-    def test_trace_no_tasks_file(self, vault_dir):
-        spec_dir = vault_dir / "03-development" / "no-tasks"
-        spec_dir.mkdir(parents=True)
-        (spec_dir / "requirements.md").write_text(
-            "The system SHALL do something.\n", encoding="utf-8"
-        )
-        result = run_script(self.SCRIPT, [
-            "--spec-slug", "no-tasks",
-            "--vault-root", str(vault_dir),
-        ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["tasks_found"] == 0
-
-    def test_missing_vault(self, tmp_path):
-        result = run_script(self.SCRIPT, [
-            "--spec-slug", "anything",
-            "--vault-root", str(tmp_path),
-        ])
-        assert result.returncode == 2
+    def test_not_a_vault(self, tmp_path):
+        cp = run_script(self.SCRIPT, ["--vault-root", str(tmp_path), "--action", "report"])
+        assert cp.returncode == 1
 
 
 # ---------------------------------------------------------------------------
-# sdlc-impact
+# sdlc-impact (single `analyze` action)
 # ---------------------------------------------------------------------------
 
 class TestImpactSkill:
-    SCRIPT = SKILLS_DIR / "sdlc-impact" / "scripts" / "impact.py"
+    SCRIPT = "sdlc-impact/scripts/impact.py"
 
-    def _setup_vault_docs(self, vault_dir: Path):
-        (vault_dir / "01-planning").mkdir(parents=True, exist_ok=True)
-        (vault_dir / "01-planning" / "roadmap.md").write_text(
-            "# Roadmap\n\nWe plan to implement OrderService this quarter.\n"
-            "OrderService will handle all order processing.\n",
-            encoding="utf-8",
-        )
-        (vault_dir / "02-architecture").mkdir(parents=True, exist_ok=True)
-        (vault_dir / "02-architecture" / "overview.md").write_text(
-            "# Architecture\n\nOrderService is the core domain service.\n",
-            encoding="utf-8",
-        )
-        # Internal file — should be excluded
-        sdlc_dir = vault_dir / ".sdlc-kit"
-        (sdlc_dir / "internal.md").write_text(
-            "OrderService internal notes\n", encoding="utf-8"
-        )
+    def _vault(self, tmp_path: Path) -> Path:
+        return make_vault(tmp_path, "02-architecture", "04-specs")
 
-    def test_impact_dry_run(self, vault_dir):
-        self._setup_vault_docs(vault_dir)
-        result = run_script(self.SCRIPT, [
-            "--term", "OrderService",
-            "--vault-root", str(vault_dir),
-            "--dry-run",
+    def _seed_chain(self, vault: Path) -> None:
+        """A → B → C, and D → A (so A has 1 forward, 1 backward dep)."""
+        _write_note(vault, "02-architecture/adr/a.md",
+                    {"type": "adr", "slug": "a", "title": "A"}, "Refers to [[b]]")
+        _write_note(vault, "02-architecture/adr/b.md",
+                    {"type": "adr", "slug": "b", "title": "B"}, "Refers to [[c]]")
+        _write_note(vault, "02-architecture/adr/c.md",
+                    {"type": "adr", "slug": "c", "title": "C"}, "")
+        _write_note(vault, "04-specs/d/d-design.md",
+                    {"type": "spec-design", "slug": "d", "title": "D"}, "Based on [[a]]")
+
+    def test_seed_not_found(self, tmp_path):
+        vault = self._vault(tmp_path)
+        self._seed_chain(vault)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "analyze", "--seed", "does-not-exist",
         ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["status"] == "dry-run"
-        assert data["term"] == "OrderService"
+        assert cp.returncode == 1
+        data = parse_json(cp)
+        assert any("not found" in e for e in data["errors"])
 
-    def test_impact_finds_matches(self, vault_dir):
-        self._setup_vault_docs(vault_dir)
-        result = run_script(self.SCRIPT, [
-            "--term", "OrderService",
-            "--vault-root", str(vault_dir),
+    def test_backward_default(self, tmp_path):
+        vault = self._vault(tmp_path)
+        self._seed_chain(vault)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "analyze", "--seed", "a",
         ])
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["status"] == "ok"
-        assert data["term"] == "OrderService"
-        assert data["total_files"] == 2
+        assert cp.returncode == 0, cp.stderr
+        data = parse_json(cp)
+        assert data["seed"] == "a"
+        assert data["direction"] == "backward"
+        stems = [n["stem"] for n in data["nodes"]]
+        # backward from A: D depends on A
+        assert "d-design" in stems
+        assert "b" not in stems
 
-    def test_impact_match_structure(self, vault_dir):
-        self._setup_vault_docs(vault_dir)
-        result = run_script(self.SCRIPT, [
-            "--term", "OrderService",
-            "--vault-root", str(vault_dir),
+    def test_forward_walks_outgoing(self, tmp_path):
+        vault = self._vault(tmp_path)
+        self._seed_chain(vault)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "analyze", "--seed", "a",
+            "--direction", "forward", "--depth", "5",
         ])
-        data = json.loads(result.stdout)
-        for match in data["matches"]:
-            assert "file" in match
-            assert "count" in match
-            assert "snippet" in match
-            assert len(match["snippet"]) <= 100
+        assert cp.returncode == 0, cp.stderr
+        data = parse_json(cp)
+        stems = [n["stem"] for n in data["nodes"]]
+        assert "b" in stems
+        assert "c" in stems
 
-    def test_impact_case_insensitive(self, vault_dir):
-        self._setup_vault_docs(vault_dir)
-        result = run_script(self.SCRIPT, [
-            "--term", "orderservice",
-            "--vault-root", str(vault_dir),
+    def test_both_direction_union(self, tmp_path):
+        vault = self._vault(tmp_path)
+        self._seed_chain(vault)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "analyze", "--seed", "a",
+            "--direction", "both", "--depth", "5", "--format", "markdown",
         ])
-        data = json.loads(result.stdout)
-        assert data["total_files"] == 2
+        assert cp.returncode == 0, cp.stderr
+        data = parse_json(cp)
+        assert "markdown" in data
+        stems = [n["stem"] for n in data["nodes"]]
+        assert "b" in stems and "d-design" in stems
 
-    def test_impact_excludes_sdlc_kit(self, vault_dir):
-        self._setup_vault_docs(vault_dir)
-        result = run_script(self.SCRIPT, [
-            "--term", "OrderService",
-            "--vault-root", str(vault_dir),
+    def test_depth_limits_walk(self, tmp_path):
+        vault = self._vault(tmp_path)
+        self._seed_chain(vault)
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "analyze", "--seed", "a",
+            "--direction", "forward", "--depth", "1",
         ])
-        data = json.loads(result.stdout)
-        file_paths = [m["file"] for m in data["matches"]]
-        assert not any(".sdlc-kit" in p for p in file_paths)
+        data = parse_json(cp)
+        stems = [n["stem"] for n in data["nodes"]]
+        assert "b" in stems
+        assert "c" not in stems  # depth 1 stops at b
 
-    def test_impact_no_matches(self, vault_dir):
-        self._setup_vault_docs(vault_dir)
-        result = run_script(self.SCRIPT, [
-            "--term", "NonExistentConcept99999",
-            "--vault-root", str(vault_dir),
+    def test_unreachable_summary(self, tmp_path):
+        vault = self._vault(tmp_path)
+        _write_note(vault, "02-architecture/adr/lonely.md",
+                    {"type": "adr", "slug": "lonely", "title": "Lonely"}, "")
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(vault), "--action", "analyze", "--seed", "lonely",
         ])
-        data = json.loads(result.stdout)
-        assert data["status"] == "ok"
-        assert data["total_files"] == 0
-        assert data["matches"] == []
+        data = parse_json(cp)
+        assert data["summary"]["total_dependents"] == 0
+        assert data["summary"]["unreachable"] is True
 
-    def test_impact_count_occurrences(self, vault_dir):
-        self._setup_vault_docs(vault_dir)
-        result = run_script(self.SCRIPT, [
-            "--term", "OrderService",
-            "--vault-root", str(vault_dir),
+    def test_not_a_vault(self, tmp_path):
+        cp = run_script(self.SCRIPT, [
+            "--vault-root", str(tmp_path), "--action", "analyze", "--seed", "x",
         ])
-        data = json.loads(result.stdout)
-        roadmap_match = next(
-            (m for m in data["matches"] if "roadmap" in m["file"]), None
-        )
-        assert roadmap_match is not None
-        assert roadmap_match["count"] == 2  # appears on 2 lines in roadmap.md
-
-    def test_missing_vault(self, tmp_path):
-        result = run_script(self.SCRIPT, [
-            "--term", "anything",
-            "--vault-root", str(tmp_path),
-        ])
-        assert result.returncode == 2
+        assert cp.returncode == 1

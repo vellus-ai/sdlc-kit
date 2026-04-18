@@ -1,92 +1,507 @@
 #!/usr/bin/env python3
-"""Phase completeness checklist."""
+"""Manage code-review records under `07-retrospectives/reviews/`.
+
+A review captures the outcome of a Pull Request review — the design/quality/
+tests/AppSec/LGPD/process checklist, the findings with severity, and the
+final decision. One file per review, identified by slug (usually
+`pr-<NNNN>-<short-topic>`), because the slug is the stable reference a
+reader can recognize at a glance.
+
+Files live at:
+
+    07-retrospectives/reviews/<slug>.md
+
+Two lifecycle axes:
+
+    status   : draft → final
+               Is the review write-up still being authored, or has the
+               reviewer delivered it?
+
+    decision : pending → approved | approved-with-comments | changes-requested
+               The reviewer's conclusion about the PR. Independent of
+               `status` — a review can be `final` + `changes-requested`, or
+               `draft` + `approved` (mid-drafting, reviewer leaning yes).
+
+Actions:
+    list
+        Enumerate reviews with slug, status, decision, reviewer, PR, title.
+    scaffold --slug S --title T [--owner O] [--pr N] [--pr-url URL]
+             [--author A] [--force]
+        Copy `07-retrospectives/_templates/review.md.tpl` into
+        `07-retrospectives/reviews/<slug>.md`, applying placeholders. Refuses
+        to overwrite unless --force.
+    transition --slug S --to {draft|final}
+        Flip `status:` and refresh `updated`. Idempotent when already at the
+        target status.
+    decide --slug S --to {pending|approved|approved-with-comments|changes-requested}
+        Flip `decision:` and refresh `updated`. Idempotent when already at
+        the target decision.
+
+The LLM drives the content interview (scope, per-section checklist pass,
+findings with severity, decision rationale) via Edit/Write. This script only
+handles deterministic file operations.
+
+Emits a single JSON object on stdout. Exit codes: 0 ok/dry-run, 1 user error,
+2 fatal.
+"""
+from __future__ import annotations
+
 import argparse
+import datetime as _dt
 import json
+import re
 import sys
-from datetime import date, datetime
+from dataclasses import dataclass, field
 from pathlib import Path
 
-_REQUIRED_FRONTMATTER = {"title", "type", "status", "phase"}
+_PLUGIN_ROOT = Path(__file__).resolve().parents[3]
+if str(_PLUGIN_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PLUGIN_ROOT))
+
+from core.regexes import FRONTMATTER_RE, SLUG_RE, STATUS_LINE, UPDATED_LINE  # noqa: E402
+from core.frontmatter import read_frontmatter, set_quoted_field  # noqa: E402
+
+
+# Review-specific frontmatter fields (quoted scalars, not shared with other skills).
+_DECISION_LINE = re.compile(r'^(decision:\s*)"?([A-Za-z0-9-]+)"?\s*$', re.MULTILINE)
+_PR_LINE = re.compile(r'^(pr:\s*)"?([^"\n]*)"?\s*$', re.MULTILINE)
+_PR_URL_LINE = re.compile(r'^(pr_url:\s*)"?([^"\n]*)"?\s*$', re.MULTILINE)
+_AUTHOR_LINE = re.compile(r'^(author:\s*)"?([^"\n]*)"?\s*$', re.MULTILINE)
+
+
+RETRO_DIR = "07-retrospectives"
+REVIEWS_DIR = "reviews"
+TEMPLATES_DIR = "_templates"
+TEMPLATE_NAME = "review.md.tpl"
+MARKER_REL = ".sdlc-kit/marker.json"
+
+VALID_STATUSES: tuple[str, ...] = ("draft", "final")
+VALID_DECISIONS: tuple[str, ...] = (
+    "pending", "approved", "approved-with-comments", "changes-requested",
+)
+
+
+# ---------------------------------------------------------------------------
+# data classes
+# ---------------------------------------------------------------------------
+
+@dataclass
+class ReviewState:
+    slug: str
+    path: str
+    title: str = ""
+    status: str = ""
+    decision: str = ""
+    reviewer: str = ""
+    author: str = ""
+    pr: str = ""
+    updated: str = ""
+
+
+@dataclass
+class Report:
+    status: str = "ok"
+    action: str = ""
+    vault_root: str = ""
+    slug: str = ""
+    review_path: str = ""
+    was_new: bool = False
+    previous_status: str = ""
+    new_status: str = ""
+    previous_decision: str = ""
+    new_decision: str = ""
+    reviews: list[ReviewState] = field(default_factory=list)
+    count: int = 0
+    errors: list[str] = field(default_factory=list)
+
+    def as_dict(self) -> dict:
+        d: dict = {
+            "status": self.status,
+            "action": self.action,
+            "vault_root": self.vault_root,
+            "errors": self.errors,
+        }
+        if self.action == "list":
+            d["reviews"] = [vars(x) for x in self.reviews]
+            d["count"] = self.count
+        elif self.action == "scaffold":
+            d["slug"] = self.slug
+            d["review_path"] = self.review_path
+            d["was_new"] = self.was_new
+        elif self.action == "transition":
+            d["slug"] = self.slug
+            d["review_path"] = self.review_path
+            d["previous_status"] = self.previous_status
+            d["new_status"] = self.new_status
+        elif self.action == "decide":
+            d["slug"] = self.slug
+            d["review_path"] = self.review_path
+            d["previous_decision"] = self.previous_decision
+            d["new_decision"] = self.new_decision
+        return d
+
+
+# ---------------------------------------------------------------------------
+# helpers
+# ---------------------------------------------------------------------------
+
+def die(report: Report, message: str, code: int = 2) -> None:
+    report.status = "error"
+    report.errors.append(message)
+    print(json.dumps(report.as_dict(), ensure_ascii=False))
+    sys.exit(code)
+
+
+def resolve_vault(arg: str, report: Report) -> Path:
+    vault = Path(arg).resolve()
+    if not vault.exists():
+        die(report, f"vault root does not exist: {vault}", code=1)
+    if not (vault / ".sdlc-kit").exists():
+        die(report, f"not a vault (missing .sdlc-kit marker): {vault}", code=1)
+    return vault
+
+
+def load_marker(vault: Path) -> dict:
+    path = vault / MARKER_REL
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def rel(vault: Path, path: Path) -> str:
+    return str(path.relative_to(vault)).replace("\\", "/")
+
+
+def reviews_folder(vault: Path) -> Path:
+    return vault / RETRO_DIR / REVIEWS_DIR
+
+
+# ---------------------------------------------------------------------------
+# action: list
+# ---------------------------------------------------------------------------
+
+def action_list(vault: Path, report: Report) -> None:
+    report.action = "list"
+    folder = reviews_folder(vault)
+    if not folder.exists():
+        return
+    for path in sorted(p for p in folder.glob("*.md") if not p.name.startswith("_")):
+        fm = read_frontmatter(path)
+        report.reviews.append(ReviewState(
+            slug=path.stem,
+            path=rel(vault, path),
+            title=fm.get("title", ""),
+            status=fm.get("status", ""),
+            decision=fm.get("decision", ""),
+            reviewer=fm.get("reviewer", ""),
+            author=fm.get("author", ""),
+            pr=fm.get("pr", ""),
+            updated=fm.get("updated", ""),
+        ))
+    report.count = len(report.reviews)
+
+
+# ---------------------------------------------------------------------------
+# action: scaffold
+# ---------------------------------------------------------------------------
+
+def build_replacements(
+    vault: Path,
+    *,
+    title: str,
+    slug: str,
+    owner: str | None,
+    today: str,
+) -> dict[str, str]:
+    marker = load_marker(vault)
+    resolved_owner = owner or marker.get("owner") or "_tbd_"
+    return {
+        "{{TITLE}}": title,
+        "{{SLUG}}": slug,
+        "{{OWNER}}": resolved_owner,
+        "{{DATE}}": today,
+        "{{PROJECT_NAME}}": marker.get("project_name") or "",
+    }
+
+
+def apply_placeholders(text: str, replacements: dict[str, str]) -> str:
+    for placeholder, value in replacements.items():
+        text = text.replace(placeholder, value)
+    return text
+
+
+def action_scaffold(
+    vault: Path,
+    *,
+    slug: str,
+    title: str,
+    owner: str | None,
+    pr: str | None,
+    pr_url: str | None,
+    author: str | None,
+    force: bool,
+    dry_run: bool,
+    report: Report,
+) -> None:
+    report.action = "scaffold"
+    report.slug = slug
+
+    if not SLUG_RE.match(slug):
+        die(report, f"invalid slug `{slug}`: must match [a-z0-9][a-z0-9-]*", code=1)
+
+    template = vault / RETRO_DIR / TEMPLATES_DIR / TEMPLATE_NAME
+    if not template.exists():
+        die(report, f"template not found: {rel(vault, template)}", code=2)
+
+    target = reviews_folder(vault) / f"{slug}.md"
+    report.review_path = rel(vault, target)
+
+    if target.exists() and not force:
+        die(
+            report,
+            f"review already exists: {report.review_path} (use --force to overwrite)",
+            code=1,
+        )
+
+    today = _dt.date.today().isoformat()
+    replacements = build_replacements(vault, title=title, slug=slug, owner=owner, today=today)
+    content = apply_placeholders(template.read_text(encoding="utf-8"), replacements)
+
+    # Optional frontmatter metadata injected at scaffold time so the note carries
+    # actionable context from the first save — no need for a manual edit pass.
+    if pr or pr_url or author:
+        m = FRONTMATTER_RE.match(content)
+        if m:
+            fm_text = m.group(1)
+            body = content[m.end():]
+            if pr:
+                fm_text = set_quoted_field(fm_text, _PR_LINE, "pr", pr)
+            if pr_url:
+                fm_text = set_quoted_field(fm_text, _PR_URL_LINE, "pr_url", pr_url)
+            if author:
+                fm_text = set_quoted_field(fm_text, _AUTHOR_LINE, "author", author)
+            content = f"---\n{fm_text}\n---\n{body}"
+
+    report.was_new = not target.exists()
+    if dry_run:
+        report.status = "dry-run"
+        return
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content, encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# action: transition (status axis)
+# ---------------------------------------------------------------------------
+
+def action_transition(
+    vault: Path,
+    *,
+    slug: str,
+    target_status: str,
+    dry_run: bool,
+    report: Report,
+) -> None:
+    report.action = "transition"
+    report.slug = slug
+
+    if target_status not in VALID_STATUSES:
+        die(
+            report,
+            f"invalid status `{target_status}` — allowed: {', '.join(VALID_STATUSES)}",
+            code=1,
+        )
+
+    target = reviews_folder(vault) / f"{slug}.md"
+    report.review_path = rel(vault, target)
+
+    if not target.exists():
+        die(report, f"review not found: {report.review_path} (run scaffold first)", code=1)
+
+    text = target.read_text(encoding="utf-8")
+    m = FRONTMATTER_RE.match(text)
+    if not m:
+        die(report, f"no frontmatter found in {report.review_path}", code=1)
+
+    fm_text = m.group(1)
+    body = text[m.end():]
+
+    status_match = STATUS_LINE.search(fm_text)
+    current_status = status_match.group(2) if status_match else ""
+    report.previous_status = current_status
+    report.new_status = target_status
+
+    if current_status == target_status:
+        return  # idempotent
+
+    new_fm = (
+        STATUS_LINE.sub(rf"\g<1>{target_status}", fm_text, count=1)
+        if status_match
+        else fm_text + f"\nstatus: {target_status}"
+    )
+    today = _dt.date.today().isoformat()
+    if UPDATED_LINE.search(new_fm):
+        new_fm = UPDATED_LINE.sub(rf"\g<1>{today}", new_fm, count=1)
+    else:
+        new_fm = new_fm + f"\nupdated: {today}"
+
+    new_text = f"---\n{new_fm}\n---\n{body}"
+
+    if dry_run:
+        report.status = "dry-run"
+        return
+    target.write_text(new_text, encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# action: decide (decision axis)
+# ---------------------------------------------------------------------------
+
+def action_decide(
+    vault: Path,
+    *,
+    slug: str,
+    target_decision: str,
+    dry_run: bool,
+    report: Report,
+) -> None:
+    report.action = "decide"
+    report.slug = slug
+
+    if target_decision not in VALID_DECISIONS:
+        die(
+            report,
+            f"invalid decision `{target_decision}` — allowed: {', '.join(VALID_DECISIONS)}",
+            code=1,
+        )
+
+    target = reviews_folder(vault) / f"{slug}.md"
+    report.review_path = rel(vault, target)
+
+    if not target.exists():
+        die(report, f"review not found: {report.review_path} (run scaffold first)", code=1)
+
+    text = target.read_text(encoding="utf-8")
+    m = FRONTMATTER_RE.match(text)
+    if not m:
+        die(report, f"no frontmatter found in {report.review_path}", code=1)
+
+    fm_text = m.group(1)
+    body = text[m.end():]
+
+    decision_match = _DECISION_LINE.search(fm_text)
+    current_decision = decision_match.group(2) if decision_match else ""
+    report.previous_decision = current_decision
+    report.new_decision = target_decision
+
+    if current_decision == target_decision:
+        return  # idempotent
+
+    if decision_match:
+        new_fm = _DECISION_LINE.sub(rf'\g<1>"{target_decision}"', fm_text, count=1)
+    else:
+        new_fm = fm_text + f'\ndecision: "{target_decision}"'
+
+    today = _dt.date.today().isoformat()
+    if UPDATED_LINE.search(new_fm):
+        new_fm = UPDATED_LINE.sub(rf"\g<1>{today}", new_fm, count=1)
+    else:
+        new_fm = new_fm + f"\nupdated: {today}"
+
+    new_text = f"---\n{new_fm}\n---\n{body}"
+
+    if dry_run:
+        report.status = "dry-run"
+        return
+    target.write_text(new_text, encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+def parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(description="SDLC Kit review manager.")
+    p.add_argument("--vault-root", required=True, help="absolute path to the `.sdlc/` vault")
+    p.add_argument(
+        "--action",
+        required=True,
+        choices=["list", "scaffold", "transition", "decide"],
+        help="list: enumerate reviews | scaffold: materialize from template | transition: change status (draft/final) | decide: set decision",
+    )
+    p.add_argument("--slug", help="review slug (required for scaffold/transition/decide)")
+    p.add_argument("--title", help="human-readable title (required for scaffold)")
+    p.add_argument("--owner", help="review owner/reviewer (falls back to marker.json owner)")
+    p.add_argument("--pr", help="PR number to pre-fill in frontmatter (scaffold only)")
+    p.add_argument("--pr-url", dest="pr_url", help="PR URL to pre-fill in frontmatter (scaffold only)")
+    p.add_argument("--author", help="PR author to pre-fill in frontmatter (scaffold only)")
+    p.add_argument(
+        "--to",
+        dest="to_value",
+        help="target value — for transition: {draft|final}; for decide: {pending|approved|approved-with-comments|changes-requested}",
+    )
+    p.add_argument("--force", action="store_true", help="overwrite existing target (scaffold only)")
+    p.add_argument("--dry-run", action="store_true", help="report only, write nothing")
+    return p.parse_args()
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--vault-root")
-    parser.add_argument("--dry-run", action="store_true")
-    args = parser.parse_args()
+    args = parse_args()
+    report = Report()
+    vault = resolve_vault(args.vault_root, report)
+    report.vault_root = str(vault)
 
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-    from core.paths import find_vault_root
-    from core.parser import parse
-    vault = Path(args.vault_root) if args.vault_root else find_vault_root()
-    if not vault:
-        print(json.dumps({"status": "error", "message": "vault not found"}))
-        sys.exit(2)
-    if not (vault / ".sdlc-kit" / "marker.json").exists():
-        print(json.dumps({"status": "error", "message": f"not a valid vault: {vault}"}))
-        sys.exit(2)
+    if args.action == "scaffold":
+        if not args.slug or not args.title:
+            die(report, "--slug and --title are required for action `scaffold`", code=1)
+    if args.action in {"transition", "decide"}:
+        if not args.slug or not args.to_value:
+            die(report, f"--slug and --to are required for action `{args.action}`", code=1)
 
-    if args.dry_run:
-        print(json.dumps({"status": "dry-run", "message": "would check phase completeness"}))
-        return
+    try:
+        if args.action == "list":
+            action_list(vault, report)
+        elif args.action == "scaffold":
+            action_scaffold(
+                vault,
+                slug=args.slug,
+                title=args.title,
+                owner=args.owner,
+                pr=args.pr,
+                pr_url=args.pr_url,
+                author=args.author,
+                force=args.force,
+                dry_run=args.dry_run,
+                report=report,
+            )
+        elif args.action == "transition":
+            action_transition(
+                vault,
+                slug=args.slug,
+                target_status=args.to_value,
+                dry_run=args.dry_run,
+                report=report,
+            )
+        elif args.action == "decide":
+            action_decide(
+                vault,
+                slug=args.slug,
+                target_decision=args.to_value,
+                dry_run=args.dry_run,
+                report=report,
+            )
+    except PermissionError as exc:
+        die(report, f"permission denied: {exc}", code=2)
+    except OSError as exc:
+        die(report, f"filesystem error: {exc}", code=2)
 
-    issues = []
-    checks = {}
-
-    # Check 1: Spec trios completeness
-    dev_dir = vault / "03-development"
-    if dev_dir.exists():
-        for spec_dir in dev_dir.iterdir():
-            if spec_dir.is_dir() and not spec_dir.name.startswith("_"):
-                for required in ("requirements.md", "design.md", "tasks.md"):
-                    if not (spec_dir / required).exists():
-                        issues.append({"check": "spec_trio", "missing": str(spec_dir / required)})
-    checks["spec_trios"] = len([i for i in issues if i.get("check") == "spec_trio"]) == 0
-
-    # Check 2: Frontmatter completeness
-    fm_issues = 0
-    for md in vault.rglob("*.md"):
-        if ".sdlc-kit" in md.parts or "_templates" in md.parts:
-            continue
-        parsed = parse(md)
-        for field in _REQUIRED_FRONTMATTER:
-            if field not in parsed["frontmatter"]:
-                issues.append({"check": "frontmatter", "file": str(md.relative_to(vault)), "missing_field": field})
-                fm_issues += 1
-    checks["frontmatter"] = fm_issues == 0
-
-    # Check 3: TASKS.md exists
-    checks["tasks_file"] = (vault / "03-development" / "TASKS.md").exists()
-    if not checks["tasks_file"]:
-        issues.append({"check": "tasks_file", "message": "TASKS.md not found in 03-development/"})
-
-    # Check 4: ADRs not stuck
-    adr_dir = vault / "02-architecture" / "ADR"
-    stuck_adrs = 0
-    if adr_dir.exists():
-        today = date.today()
-        for adr in adr_dir.glob("ADR-*.md"):
-            parsed = parse(adr)
-            if parsed["frontmatter"].get("status") == "proposed":
-                created_str = parsed["frontmatter"].get("created", "")
-                try:
-                    created = datetime.strptime(str(created_str), "%Y-%m-%d").date()
-                    if (today - created).days > 7:
-                        issues.append({"check": "adr_stuck", "file": adr.name, "days": (today - created).days})
-                        stuck_adrs += 1
-                except ValueError:
-                    pass
-    checks["adrs_not_stuck"] = stuck_adrs == 0
-
-    passed = sum(1 for v in checks.values() if v)
-    total = len(checks)
-    print(json.dumps({
-        "status": "ok",
-        "passed": passed,
-        "total": total,
-        "checks": checks,
-        "issues": issues
-    }))
+    if report.status == "ok" and args.dry_run:
+        report.status = "dry-run"
+    print(json.dumps(report.as_dict(), ensure_ascii=False))
+    sys.exit(0)
 
 
 if __name__ == "__main__":

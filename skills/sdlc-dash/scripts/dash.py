@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Open the SDLC Kit dashboard in the default browser."""
+from __future__ import annotations
+
 import argparse
 import json
+import os
 import platform
 import subprocess
 import sys
@@ -45,7 +48,7 @@ def main() -> None:
     system = platform.system()
     try:
         if system == "Windows":
-            subprocess.run(["start", dashboard_path], shell=True, check=False)
+            os.startfile(dashboard_path)  # type: ignore[attr-defined]
         elif system == "Darwin":
             subprocess.run(["open", dashboard_path], check=False)
         else:
@@ -58,7 +61,6 @@ def main() -> None:
         "status": "ok",
         "path": dashboard_path,
         "opened": opened,
-        "message": f"Dashboard aberto: {dashboard_path}" if opened else f"Abra manualmente: {dashboard_path}",
     }))
 
 
