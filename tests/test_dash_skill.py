@@ -18,7 +18,6 @@ from pathlib import Path
 
 from tests._skill_helpers import SKILLS_DIR, make_vault, parse_json, run_script
 
-
 SCRIPT = "sdlc-dash/scripts/dash.py"
 SCRIPT_PATH = SKILLS_DIR / SCRIPT
 

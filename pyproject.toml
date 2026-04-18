@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sdlc-kit"
-version = "0.3.1"
+version = "0.3.2"
 requires-python = ">=3.11"
 dependencies = []
 
@@ -57,7 +57,10 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
-ignore = ["E501"]
+# E501 — line length; enforced only when truly egregious (100-col target).
+# SIM102 — nested if → combined with and; CLI action dispatch reads better
+#          in the two-step shape than a 120-char compound conditional.
+ignore = ["E501", "SIM102"]
 
 [tool.mypy]
 python_version = "3.11"

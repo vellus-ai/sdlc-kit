@@ -21,7 +21,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO_ROOT / "skills"
 VAULT_TREE = REPO_ROOT / "assets" / "vault-tree"
@@ -36,6 +35,10 @@ def _subprocess_env() -> dict[str, str]:
     (done automatically by pytest-cov), `coverage.process_startup()` fires in
     the child and writes a `.coverage.<pid>` data file that `coverage combine`
     stitches into the parent report.
+
+    Also forces PYTHONIOENCODING=utf-8 so Unicode characters in script output
+    (e.g. arrows `→`, dashes `—`, em-spaces) round-trip correctly on Windows,
+    where the default stdout codec is cp1252.
     """
     env = os.environ.copy()
     existing = env.get("PYTHONPATH", "")
@@ -43,6 +46,7 @@ def _subprocess_env() -> dict[str, str]:
     if existing:
         parts.append(existing)
     env["PYTHONPATH"] = os.pathsep.join(parts)
+    env["PYTHONIOENCODING"] = "utf-8"
     return env
 
 
@@ -92,6 +96,7 @@ def run_script(script_rel: str, args: list[str]) -> subprocess.CompletedProcess:
         capture_output=True,
         text=True,
         encoding="utf-8",
+        errors="replace",
         env=_subprocess_env(),
     )
 

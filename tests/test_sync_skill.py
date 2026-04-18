@@ -5,8 +5,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 from tests._skill_helpers import make_vault, parse_json, run_script
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent

@@ -8,10 +8,7 @@ validated end-to-end.
 """
 from __future__ import annotations
 
-import json
 from pathlib import Path
-
-import pytest
 
 from tests._skill_helpers import (
     make_vault,
@@ -19,7 +16,6 @@ from tests._skill_helpers import (
     read_frontmatter,
     run_script,
 )
-
 
 # ---------------------------------------------------------------------------
 # sdlc-domain

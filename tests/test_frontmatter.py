@@ -10,7 +10,8 @@ import re
 from pathlib import Path
 
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
 from core.frontmatter import (
     parse_frontmatter_text,
@@ -18,8 +19,6 @@ from core.frontmatter import (
     render_frontmatter,
     set_quoted_field,
 )
-from core.regexes import UPDATED_LINE
-
 
 # ---------------------------------------------------------------------------
 # read_frontmatter

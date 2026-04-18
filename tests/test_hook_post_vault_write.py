@@ -2,13 +2,9 @@
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import sys
-import time
 from pathlib import Path
-
-import pytest
 
 from tests._skill_helpers import make_vault
 

@@ -35,7 +35,6 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
-import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -44,9 +43,8 @@ _PLUGIN_ROOT = Path(__file__).resolve().parents[3]
 if str(_PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLUGIN_ROOT))
 
-from core.regexes import FRONTMATTER_RE, SLUG_RE, STATUS_LINE, UPDATED_LINE  # noqa: E402
 from core.frontmatter import read_frontmatter  # noqa: E402
-
+from core.regexes import FRONTMATTER_RE, SLUG_RE, STATUS_LINE, UPDATED_LINE  # noqa: E402
 
 SPECS_DIR = "04-specs"
 TEMPLATES_DIR = "_templates"
@@ -125,11 +123,7 @@ class Report:
                 for f in self.features
             ]
             d["count"] = self.count
-        elif self.action == "scaffold":
-            d["slug"] = self.slug
-            d["spec_dir"] = self.spec_dir
-            d["docs"] = [vars(x) for x in self.docs]
-        elif self.action == "transition":
+        elif self.action == "scaffold" or self.action == "transition":
             d["slug"] = self.slug
             d["spec_dir"] = self.spec_dir
             d["docs"] = [vars(x) for x in self.docs]

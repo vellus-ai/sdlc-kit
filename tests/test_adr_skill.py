@@ -25,7 +25,6 @@ from tests._skill_helpers import (
     run_script,
 )
 
-
 # Mirrors the filename regex the script uses (kept independent so the test
 # doesn't depend on importing the SUT's module).
 _ADR_FILENAME_RE = re.compile(r"^ADR-(\d{4})-([a-z0-9][a-z0-9-]*)\.md$")

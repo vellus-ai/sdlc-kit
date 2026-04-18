@@ -4,6 +4,7 @@ import sqlite3
 import subprocess
 from pathlib import Path
 
+
 def parse_worktree_list(raw: str) -> list[dict]:
     """Parse output of `git worktree list --porcelain`."""
     worktrees = []

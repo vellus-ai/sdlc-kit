@@ -53,7 +53,6 @@ if str(_PLUGIN_ROOT) not in sys.path:
 
 from core.regexes import FRONTMATTER_RE, SLUG_RE, UPDATED_LINE  # noqa: E402
 
-
 SPECS_DIR = "04-specs"
 TASKS_FILE = "tasks.md"
 

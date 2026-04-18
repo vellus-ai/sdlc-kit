@@ -34,9 +34,10 @@ _PLUGIN_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 if str(_PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLUGIN_ROOT))
 
+import contextlib  # noqa: E402
+
 from core.i18n import t  # noqa: E402
 from core.paths import read_locale  # noqa: E402
-
 
 # ---------------------------------------------------------------------------
 # schema
@@ -235,9 +236,7 @@ def should_skip(md_file: Path, vault_root: Path) -> bool:
     rel_parts = md_file.relative_to(vault_root).parts
     if ".sdlc-kit" in rel_parts:
         return True
-    if "_templates" in rel_parts:
-        return True
-    return False
+    return "_templates" in rel_parts
 
 
 def _is_placeholder_link(target: str) -> bool:
@@ -766,10 +765,8 @@ def regenerate_index(
     marker_path = vault_root / ".sdlc-kit" / "marker.json"
     project_name = "Projeto"
     if marker_path.exists():
-        try:
+        with contextlib.suppress(Exception):
             project_name = json.loads(marker_path.read_text(encoding="utf-8")).get("project_name") or project_name
-        except Exception:
-            pass
 
     sync_ts = _dt.datetime.now().strftime("%Y-%m-%d %H:%M")
     content = render_index(project_name, sync_ts, notes, anomalies, locale=locale)

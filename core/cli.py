@@ -1,6 +1,6 @@
 import json
 import sys
-from pathlib import Path
+
 
 def main() -> None:
     cmds = {"init-db": _init_db, "scan": _scan, "status": _status}
@@ -11,8 +11,8 @@ def main() -> None:
     cmds[sys.argv[1]]()
 
 def _require_vault():
-    from .paths import find_vault_root, get_db_path
     from .db import connect, run_migrations
+    from .paths import find_vault_root, get_db_path
     vault = find_vault_root()
     if not vault:
         print("ERROR: No vault found. Run /sdlc-kit:init first.", file=sys.stderr)
@@ -23,8 +23,8 @@ def _require_vault():
     return vault, conn
 
 def _init_db() -> None:
-    from .paths import find_vault_root, get_db_path
     from .db import connect, run_migrations
+    from .paths import find_vault_root, get_db_path
     vault = find_vault_root()
     if not vault:
         print("ERROR: No vault found.", file=sys.stderr)

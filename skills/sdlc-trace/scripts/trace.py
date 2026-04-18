@@ -43,7 +43,6 @@ if str(_PLUGIN_ROOT) not in sys.path:
 
 from core.regexes import FRONTMATTER_RE, WIKILINK_RE  # noqa: E402
 
-
 MARKER_REL = ".sdlc-kit/marker.json"
 
 # Phases we walk. Everything under the vault root that isn't one of these (or
@@ -165,10 +164,7 @@ def should_skip(md_file: Path, vault_root: Path) -> bool:
         return True
     if "_templates" in rel_parts:
         return True
-    for part in rel_parts[:-1]:  # exclude the file name itself
-        if part.startswith(".") and part not in (".",):
-            return True
-    return False
+    return any(part.startswith(".") and part not in (".",) for part in rel_parts[:-1])
 
 
 def parse_frontmatter(text: str) -> dict[str, Any]:

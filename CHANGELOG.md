@@ -7,6 +7,17 @@ aderindo ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [0.3.2] — 2026-04-18
+
+### Corrigido
+
+- **CI completamente verde em 9 combinações** — v0.3.1 corrigiu o `ModuleNotFoundError`, mas deixou três issues visíveis:
+  1. **Lint (ruff) com 116 erros** — acúmulo de imports não-utilizados (`F401`), `if` aninhados (`SIM102`), refatorações automáticas (`UP`/`B`). Aplicado `ruff check --fix` + `--unsafe-fixes` em 109 erros; remanescentes 2 blocos `if/else` para ternário e 1 `E402` consertados à mão. Adicionado `SIM102` ao `ignore` do `pyproject.toml` (estilístico, não bug). Removidas duplicatas órfãs de `read_frontmatter` em `sdlc-prd` e `sdlc-steer` (restos da refatoração Fase 1 que o `F811` detectou).
+  2. **`UnicodeEncodeError 'charmap'` no Windows py3.13** — os scripts emitem JSON com caracteres como `→`, `—`, em-dash em mensagens de erro. No Windows o default stdout é cp1252 e falha ao encodar. **Fix**: `tests/_skill_helpers._subprocess_env()` força `PYTHONIOENCODING=utf-8` no env de todo subprocess; `run_script()` passa `errors="replace"` no decode para tolerar bytes não-UTF-8 no stderr do child.
+  3. **Script `skills/sdlc-impact/scripts/impact.py`** — 1 bloco `if/else` de 4 linhas reduzido para expressão ternária (legibilidade preservada).
+- **`skills/sdlc-prd/scripts/prd.py` + `skills/sdlc-steer/scripts/steer.py`** — duplicatas da função `read_frontmatter` que sobreviveram à extração para `core/frontmatter.py` foram removidas (causavam `F811` em ruff).
+- **`skills/sdlc-sync/scripts/sync.py`** — `import contextlib` movido para o bloco de imports ordenado por ruff (`UP`/`I` conformance).
+
 ## [0.3.1] — 2026-04-18
 
 ### Corrigido

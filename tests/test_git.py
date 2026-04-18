@@ -1,8 +1,8 @@
 # tests/test_git.py
 import json
-from pathlib import Path
-import pytest
-from core.git import parse_worktree_list, parse_pr_list
+
+from core.git import parse_pr_list, parse_worktree_list
+
 
 def test_parse_worktree_list_basic():
     raw = (

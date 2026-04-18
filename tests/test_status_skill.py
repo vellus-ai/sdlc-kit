@@ -17,7 +17,6 @@ from pathlib import Path
 from core.db import connect, run_migrations
 from tests._skill_helpers import make_vault, parse_json, run_script
 
-
 SCRIPT = "sdlc-status/scripts/status.py"
 
 

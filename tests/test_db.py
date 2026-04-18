@@ -3,9 +3,8 @@ Test suite para core/db.py
 TDD: testes antes da implementação
 """
 
-import sqlite3
-from pathlib import Path
 import pytest
+
 from core.db import connect, run_migrations
 
 

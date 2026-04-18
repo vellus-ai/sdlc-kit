@@ -17,7 +17,6 @@ from pathlib import Path
 
 from tests._skill_helpers import make_vault, parse_json, run_script
 
-
 SCRIPT = "sdlc-doc/scripts/doc.py"
 
 

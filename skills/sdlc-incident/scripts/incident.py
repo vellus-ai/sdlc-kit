@@ -65,9 +65,8 @@ _PLUGIN_ROOT = Path(__file__).resolve().parents[3]
 if str(_PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLUGIN_ROOT))
 
-from core.regexes import FRONTMATTER_RE, SLUG_RE, STATUS_LINE, UPDATED_LINE  # noqa: E402
 from core.frontmatter import read_frontmatter, set_quoted_field  # noqa: E402
-
+from core.regexes import FRONTMATTER_RE, SLUG_RE, STATUS_LINE, UPDATED_LINE  # noqa: E402
 
 RETRO_DIR = "07-retrospectives"
 INCIDENTS_DIR = "incidents"

@@ -1,7 +1,8 @@
 """Tests for core.i18n."""
 from __future__ import annotations
 
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
 from core.i18n import (
     DEFAULT_LOCALE,

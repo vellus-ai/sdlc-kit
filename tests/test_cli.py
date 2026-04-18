@@ -5,11 +5,11 @@ Tests the command-line interface and command handlers.
 
 import json
 import sys
-from io import StringIO
-from pathlib import Path
+
 import pytest
+
+from core.cli import _init_db, _require_vault, _scan, _status, main
 from core.db import connect, run_migrations
-from core.cli import main, _init_db, _scan, _status, _require_vault
 
 
 @pytest.fixture

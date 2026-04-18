@@ -1,6 +1,7 @@
 import json
-from pathlib import Path
+
 import pytest
+
 from core.paths import DEFAULT_LOCALE, find_vault_root, get_db_path, get_marker_path, read_locale
 
 

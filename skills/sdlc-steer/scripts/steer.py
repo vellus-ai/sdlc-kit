@@ -20,7 +20,6 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
-import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -29,9 +28,8 @@ _PLUGIN_ROOT = Path(__file__).resolve().parents[3]
 if str(_PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLUGIN_ROOT))
 
-from core.regexes import FRONTMATTER_RE, STATUS_LINE, UPDATED_LINE  # noqa: E402
 from core.frontmatter import read_frontmatter  # noqa: E402
-
+from core.regexes import FRONTMATTER_RE, STATUS_LINE, UPDATED_LINE  # noqa: E402
 
 STEERING_DOCS: tuple[str, ...] = ("product", "tech", "standards")
 STEERING_DIR = "00-steering"
@@ -119,32 +117,6 @@ def load_marker(vault: Path) -> dict:
         return {}
 
 
-# that usually follows the closing frontmatter fence.
-
-
-def read_frontmatter(path: Path) -> dict:
-    """Minimal frontmatter parser — line-oriented, no YAML dependency.
-
-    Returns a flat dict of top-level scalar key/value pairs. Anything nested or
-    multi-line YAML is skipped (good enough for our needs — we only read
-    status, updated, title)."""
-    if not path.exists():
-        return {}
-    text = path.read_text(encoding="utf-8", errors="replace")
-    m = FRONTMATTER_RE.match(text)
-    if not m:
-        return {}
-    fm: dict = {}
-    for line in m.group(1).split("\n"):
-        if ":" not in line or line.lstrip().startswith("#"):
-            continue
-        key, _, value = line.partition(":")
-        key = key.strip()
-        value = value.strip()
-        if value.startswith('"') and value.endswith('"') and len(value) >= 2:
-            value = value[1:-1]
-        fm[key] = value
-    return fm
 
 
 # ---------------------------------------------------------------------------

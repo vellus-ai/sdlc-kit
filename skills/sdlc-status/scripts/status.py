@@ -13,8 +13,8 @@ def main() -> None:
     args = parser.parse_args()
 
     sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-    from core.paths import find_vault_root, get_db_path
     from core.db import connect, run_migrations
+    from core.paths import find_vault_root, get_db_path
 
     vault = Path(args.vault_root) if args.vault_root else find_vault_root()
     if not vault:

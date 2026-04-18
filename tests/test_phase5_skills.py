@@ -9,15 +9,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from tests._skill_helpers import (
     make_vault,
     parse_json,
     read_frontmatter,
     run_script,
 )
-
 
 # ---------------------------------------------------------------------------
 # sdlc-retro

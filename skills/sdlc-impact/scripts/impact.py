@@ -25,18 +25,16 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable
 
 _PLUGIN_ROOT = Path(__file__).resolve().parents[3]
 if str(_PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLUGIN_ROOT))
 
 from core.regexes import FRONTMATTER_RE, WIKILINK_RE  # noqa: E402
-
 
 MARKER_REL = ".sdlc-kit/marker.json"
 
@@ -146,10 +144,7 @@ def should_skip(md_file: Path, vault_root: Path) -> bool:
         return True
     # Skip any dot-prefixed directory segment (hidden folders). Never skip the
     # file itself based on name — CLAUDE.md and similar live at the root.
-    for part in rel_parts[:-1]:
-        if part.startswith("."):
-            return True
-    return False
+    return any(part.startswith(".") for part in rel_parts[:-1])
 
 
 def _parse_frontmatter_block(fm_text: str) -> dict:
@@ -160,9 +155,7 @@ def _parse_frontmatter_block(fm_text: str) -> dict:
         key, _, value = line.partition(":")
         key = key.strip()
         value = value.strip()
-        if value.startswith('"') and value.endswith('"') and len(value) >= 2:
-            value = value[1:-1]
-        elif value.startswith("'") and value.endswith("'") and len(value) >= 2:
+        if value.startswith('"') and value.endswith('"') and len(value) >= 2 or value.startswith("'") and value.endswith("'") and len(value) >= 2:
             value = value[1:-1]
         fm[key] = value
     return fm
@@ -314,10 +307,7 @@ def bfs(
         next_frontier: list[str] = []
         for node in frontier:
             for neighbour in sorted(adjacency.get(node, set())):
-                if edge_orientation == "outgoing":
-                    edge = (node, neighbour)
-                else:  # "incoming"
-                    edge = (neighbour, node)
+                edge = (node, neighbour) if edge_orientation == "outgoing" else (neighbour, node)
                 if edge not in seen_edges:
                     seen_edges.add(edge)
                     edges.append(edge)

@@ -1,7 +1,8 @@
-import json
 import time
 from pathlib import Path
+
 import pytest
+
 from core.db import connect, run_migrations
 from core.scanner import scan
 

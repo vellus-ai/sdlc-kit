@@ -14,8 +14,8 @@ understand. For richer YAML (lists, nested maps, block scalars), rely on
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Mapping
 
 from core.regexes import FRONTMATTER_RE
 
