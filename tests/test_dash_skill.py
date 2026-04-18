@@ -36,12 +36,31 @@ def _run_with_shim(vault: Path, tmp_path: Path, *extra_args: str,
     """
     shim_dir = tmp_path / "_shim"
     shim_dir.mkdir(exist_ok=True)
+    # Neutralise `os.startfile` (Windows) and the `open`/`xdg-open` shell-outs
+    # (Darwin/Linux) without touching `subprocess.run` globally — replacing
+    # `subprocess.run` with `lambda: None` breaks `coverage.process_startup`
+    # and stdlib internals on Windows/py3.11 (AttributeError on .stdout of
+    # None). Instead we patch the two specific entry points the dash.py
+    # script uses, leaving the rest of subprocess intact. The dash.py
+    # catches `Exception` around these calls, so any failure mode the test
+    # wants to simulate can be raised directly inside the patched callable.
     default_shim = (
         "import os, subprocess\n"
-        # No-op replacements — record the call as an env file so the test
-        # can inspect it if needed.
-        "os.startfile = lambda p, *a, **kw: None\n"
-        "subprocess.run = lambda *a, **kw: None\n"
+        "def _set_startfile(p, *a, **kw):\n"
+        "    return None\n"
+        "os.startfile = _set_startfile\n"
+        "_orig_run = subprocess.run\n"
+        "def _guarded_run(args, *a, **kw):\n"
+        "    # Intercept only the two shell-out commands dash.py issues;\n"
+        "    # pass everything else through to the real subprocess.run.\n"
+        "    if args and args[0] in ('open', 'xdg-open'):\n"
+        "        class _Done:\n"
+        "            returncode = 0\n"
+        "            stdout = ''\n"
+        "            stderr = ''\n"
+        "        return _Done()\n"
+        "    return _orig_run(args, *a, **kw)\n"
+        "subprocess.run = _guarded_run\n"
     )
     (shim_dir / "sitecustomize.py").write_text(
         shim_body if shim_body is not None else default_shim,
