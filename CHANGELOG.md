@@ -7,6 +7,28 @@ aderindo ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-04-18
+
+### Corrigido
+
+- **CI fail em todas as 9 combinações (ubuntu/macos/windows × py3.11/3.12/3.13)** — o job `test` falhava na fase de coleta com `ModuleNotFoundError: No module named 'tests'`. Causa: os arquivos de teste importam `from tests._skill_helpers import ...` para compartilhar fixtures, mas o runner de CI instala apenas os pacotes listados em `pyproject.toml` (`core`, `hooks`, `skills`) — sem `tests/`. Localmente pytest achava o path via rootdir discovery; no CI, não.
+- **Solução**: adicionar `tests/__init__.py` (vazio, com docstring explicativa). Isso transforma `tests/` em um pacote Python importável, tornando os imports `from tests._skill_helpers import ...` resolúveis em qualquer ambiente, incluindo CI com venv limpa.
+- **Bônus**: `release.yml` agora publica v0.3.1 com notes extraídos desta seção do CHANGELOG automaticamente.
+
+### Smoke test (Track A — vendor marketplace)
+
+Validado manualmente antes do tag:
+
+```bash
+mkdir /tmp/smoke && cd /tmp/smoke && git init
+python .../sdlc-init/scaffold.py --vault-root . --project-name smoke --owner tester
+python -c "from core.db import connect, run_migrations; ..."    # init DB
+python .../sdlc-sync/sync.py --vault-root .
+# → 65 arquivos criados (vault completo: 8 fases + CLAUDE.md + _INDEX.md + dashboard.html + db.sqlite)
+# → _INDEX.md renderizado em pt-BR por default
+# → 506 testes da suite continuam 100% verdes
+```
+
 ## [0.3.0] — 2026-04-18
 
 ### Adicionado
