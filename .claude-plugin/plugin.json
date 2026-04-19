@@ -1,47 +1,21 @@
 {
   "name": "sdlc-kit",
-  "version": "0.3.3",
-  "description": "Spec-Driven Development vault for Claude Code projects \u2014 23 skills across 8 canonical phases, SDD/DDD/C4, dashboard, git worktrees, traceability + impact analysis",
+  "version": "0.4.0",
+  "description": "Spec-Driven Development + DDD for Claude Code. Since v0.4.0 split into two composable plugins: sdlc-kit (core — 11 daily-PR-loop skills) and sdlc-kit-extended (11 optional governance, architecture and post-delivery skills). See marketplace.json for installable plugins.",
   "author": {
     "name": "Vellus",
     "email": "contato@vellus.tech",
     "url": "https://vellus.tech/"
   },
-  "homepage": "https://github.com/vellus-ai/sdlc-kit",
+  "homepage": "https://vellus.tech/",
   "repository": "https://github.com/vellus-ai/sdlc-kit",
   "license": "MIT",
   "keywords": [
     "sdd",
     "spec-driven-development",
     "ddd",
-    "trd",
     "vault",
     "obsidian",
-    "adr",
-    "c4-diagrams",
-    "api-design",
-    "traceability",
-    "impact-analysis",
-    "kanban",
-    "worktree",
-    "retrospective",
-    "post-mortem",
-    "code-review",
-    "appsec",
-    "lgpd",
     "productivity"
-  ],
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit|NotebookEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/post-vault-write.py\""
-          }
-        ]
-      }
-    ]
-  }
+  ]
 }
