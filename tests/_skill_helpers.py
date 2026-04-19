@@ -22,8 +22,15 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SKILLS_DIR = REPO_ROOT / "skills"
-VAULT_TREE = REPO_ROOT / "assets" / "vault-tree"
+PLUGINS_ROOT = REPO_ROOT / "plugins"
+CORE_PLUGIN = PLUGINS_ROOT / "core"
+EXTENDED_PLUGIN = PLUGINS_ROOT / "extended"
+# Both plugins expose `skills/`. Helpers below resolve a script path by
+# searching both, so tests passing `"sdlc-prd/scripts/prd.py"` keep working
+# without knowing which plugin owns the skill.
+SKILLS_DIRS = (CORE_PLUGIN / "skills", EXTENDED_PLUGIN / "skills")
+# Templates and dashboard live with the core plugin (extended doesn't ship them).
+VAULT_TREE = CORE_PLUGIN / "assets" / "vault-tree"
 TESTS_DIR = Path(__file__).resolve().parent
 
 
@@ -83,14 +90,24 @@ def make_vault(tmp_path: Path, *phases: str, owner: str = "team-alpha",
     return tmp_path
 
 
-def run_script(script_rel: str, args: list[str]) -> subprocess.CompletedProcess:
-    """Invoke `skills/<script_rel>` with the given argv tail.
+def _resolve_script(script_rel: str) -> Path:
+    """Find a skill script in either plugin (core or extended)."""
+    for skills_dir in SKILLS_DIRS:
+        candidate = skills_dir / script_rel
+        if candidate.exists():
+            return candidate
+    raise AssertionError(
+        f"skill script missing: {script_rel} (searched {SKILLS_DIRS})"
+    )
 
-    `script_rel` is relative to the `skills/` root, e.g.
-    `"sdlc-domain/scripts/domain.py"`.
+
+def run_script(script_rel: str, args: list[str]) -> subprocess.CompletedProcess:
+    """Invoke a skill script (auto-resolves between core/extended plugins).
+
+    `script_rel` is relative to either `plugins/core/skills/` or
+    `plugins/extended/skills/`, e.g. `"sdlc-domain/scripts/domain.py"`.
     """
-    script = SKILLS_DIR / script_rel
-    assert script.exists(), f"skill script missing: {script}"
+    script = _resolve_script(script_rel)
     return subprocess.run(
         [sys.executable, str(script)] + args,
         capture_output=True,

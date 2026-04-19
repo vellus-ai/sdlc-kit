@@ -1,42 +1,54 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "sdlc-kit",
-  "description": "Spec-Driven Development vault para Claude Code \u2014 cria e mant\u00e9m um vault `.sdlc/` versionado no seu reposit\u00f3rio Git com 23 skills cobrindo o ciclo completo de desenvolvimento (SDD, DDD, ADRs, C4, API contracts, Kanban, worktrees, retros, incidents, traceability + impact analysis).",
+  "description": "Spec-Driven Development kit for Claude Code. Two composable plugins: sdlc-kit (core — 11 skills for the daily PR loop) and sdlc-kit-extended (11 optional skills for governance, architecture/domain modeling and post-delivery analysis).",
   "owner": {
-    "name": "Vellus AI",
-    "email": "contato@vellus.tech"
+    "name": "Vellus",
+    "email": "contato@vellus.tech",
+    "url": "https://vellus.tech/"
   },
   "plugins": [
     {
       "name": "sdlc-kit",
-      "description": "Plugin para Claude Code que cria e mant\u00e9m um vault de Spec-Driven Development (SDD) + Domain-Driven Design (DDD) dentro do seu reposit\u00f3rio Git. Base de conhecimento versionada, Obsidian-compat\u00edvel, otimizada para LLMs. 23 skills cobrem o ciclo completo: PRDs, ADRs, TRDs, C4, API contracts (REST/async/gRPC/webhook), aggregates DDD, specs trio EARS, Kanban, milestones RAG, git worktrees, retrospectivas, incidents com auto-timestamps, PR code review dual-axis, rastreabilidade e an\u00e1lise de impacto. Dashboard HTML autocontido + i18n pt-br/en.",
-      "source": "./",
+      "description": "Spec-Driven Development for Claude Code. 11 skills for the daily PR loop — init, PRDs, ADRs, SDD specs (EARS), tasks, git worktrees, code reviews (Code Reviewer + AppSec dual-axis), retrospectives. Includes a PostToolUse hook that auto-indexes every .md save into a SQLite tracker. Self-contained HTML dashboard (Kanban + branch graph) included.",
+      "source": "./plugins/core",
       "category": "productivity",
-      "homepage": "https://github.com/vellus-ai/sdlc-kit",
+      "homepage": "https://vellus.tech/",
       "repository": "https://github.com/vellus-ai/sdlc-kit",
       "license": "MIT",
       "keywords": [
         "sdd",
         "spec-driven-development",
-        "ddd",
-        "trd",
         "vault",
         "obsidian",
         "adr",
+        "code-review",
+        "appsec",
+        "worktree",
+        "retrospective",
+        "kanban",
+        "productivity"
+      ]
+    },
+    {
+      "name": "sdlc-kit-extended",
+      "description": "11 optional skills layered on top of sdlc-kit core. Adds governance (TRDs, epics, milestones, steering), architecture & domain modeling (C4 diagrams in 3 levels, API contracts in 4 styles, DDD aggregates/events/contracts, design system tokens), and post-delivery analysis (incidents with auto-timestamps, traceability matrix, BFS impact analysis). Requires sdlc-kit core.",
+      "source": "./plugins/extended",
+      "category": "productivity",
+      "homepage": "https://vellus.tech/",
+      "repository": "https://github.com/vellus-ai/sdlc-kit",
+      "license": "MIT",
+      "keywords": [
+        "ddd",
+        "trd",
         "c4-diagrams",
         "api-design",
         "traceability",
         "impact-analysis",
-        "kanban",
-        "worktree",
-        "retrospective",
         "post-mortem",
-        "code-review",
-        "appsec",
-        "lgpd",
-        "productivity"
+        "design-system",
+        "sdlc-kit-extension"
       ]
     }
-  ],
-  "version": "0.3.3"
+  ]
 }

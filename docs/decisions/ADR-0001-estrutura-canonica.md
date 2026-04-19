@@ -9,6 +9,8 @@ tags: [architecture, vault, scaffold]
 
 # ADR-0001 — Estrutura canônica do vault `.sdlc/`
 
+> 🇬🇧 **English summary:** This ADR fixes the canonical layout of the `.sdlc/` vault as **8 numbered top-level directories** (`00-steering`, `01-planning`, `02-architecture`, `03-domain`, `04-specs`, `05-development`, `06-design-system`, `07-retrospectives`), each with deterministic sub-folders. Decided because three competing layouts were circulating and none mapped 1-to-1 to the 21 (now 22) skills. Status: **accepted**.
+
 ## Status
 
 Aceita.

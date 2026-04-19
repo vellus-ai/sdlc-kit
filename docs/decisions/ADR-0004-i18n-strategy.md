@@ -10,6 +10,8 @@ supersedes: []
 
 # ADR-0004 — i18n strategy: English artifacts, locale-aware UX via `core/i18n.py`
 
+> 🇧🇷 **Resumo em português:** Esta ADR fixa que código, SKILL.md, templates e docs técnicos são escritos em **inglês** (agnóstico de linguagem). O UX gerado (`_INDEX.md`, `_MOC.md`) é renderizado no idioma definido em `.sdlc-kit/marker.json:locale` (default `pt-br`, alternativo `en`) via `core/i18n.py`. O LLM espelha o idioma da conversa do usuário ao preencher conteúdo narrativo. Status: **aceita**.
+
 ## Status
 
 Accepted.

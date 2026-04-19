@@ -16,10 +16,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-from tests._skill_helpers import SKILLS_DIR, make_vault, parse_json, run_script
+from tests._skill_helpers import _resolve_script, make_vault, parse_json, run_script
 
 SCRIPT = "sdlc-dash/scripts/dash.py"
-SCRIPT_PATH = SKILLS_DIR / SCRIPT
+SCRIPT_PATH = _resolve_script(SCRIPT)
 
 
 def _write_dashboard(vault: Path, body: str = "<html></html>") -> Path:

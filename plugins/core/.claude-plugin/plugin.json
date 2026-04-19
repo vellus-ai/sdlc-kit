@@ -1,0 +1,37 @@
+{
+  "name": "sdlc-kit",
+  "version": "0.4.0",
+  "description": "Spec-Driven Development vault for Claude Code — core (11 skills for daily delivery: init, sync, status, dash, prd, adr, spec, task, worktree, review, retro).",
+  "author": {
+    "name": "Vellus",
+    "email": "contato@vellus.tech",
+    "url": "https://vellus.tech/"
+  },
+  "homepage": "https://github.com/vellus-ai/sdlc-kit",
+  "repository": "https://github.com/vellus-ai/sdlc-kit",
+  "license": "MIT",
+  "keywords": [
+    "sdd",
+    "spec-driven-development",
+    "vault",
+    "obsidian",
+    "adr",
+    "code-review",
+    "retrospective",
+    "worktree",
+    "productivity"
+  ],
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/post-vault-write.py\""
+          }
+        ]
+      }
+    ]
+  }
+}

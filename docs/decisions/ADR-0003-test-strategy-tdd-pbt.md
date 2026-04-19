@@ -10,6 +10,8 @@ supersedes: []
 
 # ADR-0003 — Test strategy: TDD + PBT + coverage ≥ 90%
 
+> 🇧🇷 **Resumo em português:** Esta ADR fixa TDD como default, PBT onde houver invariantes, cobertura mínima de **90%** nos módulos `core/`, e scripts testados como subprocessos (nunca importando internals). Regressões mais comuns que a estratégia previne: idempotência quebrada, scaffolders sobrescrevendo sem `--force`, e validação de slug silenciosamente drift. Status: **aceita**.
+
 ## Status
 
 Accepted.

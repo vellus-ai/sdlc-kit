@@ -234,7 +234,7 @@ class TestReadRealTemplate:
     def test_reads_actual_trd_template(self) -> None:
         """The canonical TRD template must parse correctly."""
         repo_root = Path(__file__).parent.parent
-        tpl = repo_root / "assets" / "vault-tree" / "02-architecture" / "_templates" / "trd.md.tpl"
+        tpl = repo_root / "plugins" / "core" / "assets" / "vault-tree" / "02-architecture" / "_templates" / "trd.md.tpl"
         if not tpl.exists():
             pytest.skip("TRD template not present")
         fm = read_frontmatter(tpl)

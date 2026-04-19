@@ -1,0 +1,24 @@
+{
+  "name": "sdlc-kit-extended",
+  "version": "0.4.0",
+  "description": "Extended skills for SDLC Kit — 11 skills adding governance (trd, epic, milestone, steer), architecture & domain (c4, api, domain, design-system) and operations/analysis (incident, trace, impact). Requires sdlc-kit core.",
+  "author": {
+    "name": "Vellus",
+    "email": "contato@vellus.tech",
+    "url": "https://vellus.tech/"
+  },
+  "homepage": "https://github.com/vellus-ai/sdlc-kit",
+  "repository": "https://github.com/vellus-ai/sdlc-kit",
+  "license": "MIT",
+  "keywords": [
+    "ddd",
+    "trd",
+    "c4-diagrams",
+    "api-design",
+    "traceability",
+    "impact-analysis",
+    "post-mortem",
+    "design-system",
+    "sdlc-kit-extension"
+  ]
+}

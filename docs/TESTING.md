@@ -1,5 +1,7 @@
 # Testing Guide
 
+> 📖 **Também disponível em [Português (Brasil)](#guia-de-testes--português-brasil) abaixo.**
+
 This document explains how the SDLC Kit plugin is tested and how to write tests for new code.
 
 ## Philosophy
@@ -135,4 +137,33 @@ Every PR must satisfy:
 - `pytest -m pbt` passes
 - Coverage ≥ 90% on any package touched
 - `ruff check .` clean
-- `mypy core skills hooks` clean
+- `mypy core plugins tests` clean
+
+---
+---
+
+## Guia de Testes — Português (Brasil)
+
+> A versão canônica é a **inglesa acima**. Esta seção resume o essencial em português.
+
+### Filosofia
+
+- **Comportamento sobre implementação.** Um teste afirma o que o usuário observa, não qual função privada foi chamada.
+- **TDD é o default.** Red → green → refactor, sempre.
+- **Property-based onde houver invariantes.** Enumerar exemplos serve para poucos casos; quando a regra é algébrica (idempotência, round-trip, monotonicidade), escreva uma property.
+- **Rápido por padrão.** A execução default do `pytest` pula testes lentos (`-m "not slow"` no CI-fast).
+- **Scripts são testados como subprocessos.** Skills expõem contrato JSON em stdout — testamos rodando o interpretador real, não importando internals.
+
+### Helper `tests/_skill_helpers.py`
+
+- `make_vault(tmp_path, *phases)` — constrói um vault mínimo em `tmp_path`, escreve `.sdlc-kit/marker.json`, copia as fases pedidas (com `_templates/`) do `plugins/core/assets/vault-tree/`.
+- `run_script(script_rel, args)` — roda um script de skill como subprocess; resolve automaticamente entre `plugins/core/skills/` e `plugins/extended/skills/`.
+
+### Antes de mergear
+
+- `pytest` passa
+- `pytest -m slow` passa (nightly ou on-demand)
+- `pytest -m pbt` passa
+- Cobertura ≥ 90% em qualquer pacote tocado
+- `ruff check .` limpo
+- `mypy core plugins tests` limpo

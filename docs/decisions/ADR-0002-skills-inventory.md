@@ -10,6 +10,8 @@ supersedes: []
 
 # ADR-0002 — Inventário de skills do SDLC Kit
 
+> 🇬🇧 **English summary:** This ADR freezes the canonical inventory of skills. Since v0.4.0, the 22 skills are split between two composable plugins: **`sdlc-kit`** (core — 11 skills for the daily PR loop) and **`sdlc-kit-extended`** (11 optional skills for governance, architecture and post-delivery analysis). Status: **accepted** (superseded scope section updated for the v0.4.0 split).
+
 ## Status
 
 Aceita. Substitui a lista informal em `plugin.json` e no plano `joyful-swimming-origami.md`.

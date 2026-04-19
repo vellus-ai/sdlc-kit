@@ -1,5 +1,7 @@
 # Architecture
 
+> 📖 **Also available in [Português (Brasil)](#arquitetura--português-brasil) below.**
+
 This document describes how the SDLC Kit plugin is structured, how its pieces fit together, and the design decisions that shape the codebase.
 
 ## Goals
@@ -50,7 +52,7 @@ External dependencies are deliberately minimal: Git (always), optional `gh` CLI 
 │                                                                  │
 │  ┌─────────────┐        ┌─────────────┐       ┌──────────────┐   │
 │  │  Skills     │        │    Hooks    │       │  CLI         │   │
-│  │ (23 skills) │        │ PostToolUse │       │ sdlc-kit     │   │
+│  │ (22 skills) │        │ PostToolUse │       │ sdlc-kit     │   │
 │  └──────┬──────┘        └──────┬──────┘       └──────┬───────┘   │
 │         │ subprocess           │ Python                │         │
 │         ▼                      ▼                       ▼         │
@@ -68,7 +70,7 @@ External dependencies are deliberately minimal: Git (always), optional `gh` CLI 
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-### Skills (`skills/sdlc-*/`)
+### Skills (`plugins/{core,extended}/skills/sdlc-*/`)
 
 Each skill is a self-contained directory:
 
@@ -77,7 +79,7 @@ Each skill is a self-contained directory:
 - `references/` (optional) — context docs the LLM should read for specific sections.
 - `assets/` (optional) — templates, static files (e.g., the vault tree under `sdlc-init`).
 
-The 23 skills span 8 SDLC phases. See [ADR-0002](decisions/ADR-0002-skills-inventory.md).
+The 22 skills span 8 SDLC phases, split across two composable plugins (`plugins/core` — 11 skills; `plugins/extended` — 11 skills). See [ADR-0002](decisions/ADR-0002-skills-inventory.md).
 
 ### Hooks (`hooks/`)
 
@@ -208,3 +210,47 @@ When you add a new skill:
 6. Add tests under `tests/test_<name>_skill.py` using the helpers in `tests/_skill_helpers.py`.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the end-to-end workflow.
+
+---
+---
+
+## Arquitetura — Português (Brasil)
+
+> A versão canônica deste documento é a **inglesa acima**. Esta seção é um resumo em português.
+
+Este documento descreve como o plugin SDLC Kit é estruturado, como suas peças se encaixam, e as decisões de design que moldam o código-base.
+
+### Objetivos
+
+- **Onboarding sem atrito.** `/sdlc-kit:init` faz uma pergunta e cria o vault.
+- **Única fonte de verdade.** O vault em disco — não um banco — é autoritativo. SQLite é um índice derivado, sempre regenerável pela skill librarian.
+- **Plugin agnóstico de linguagem, UX multilíngue.** Código e templates permanecem em inglês; o LLM espelha o idioma da conversa. Ver [ADR-0004](decisions/ADR-0004-i18n-strategy.md).
+- **Local-first e stdlib-first.** Sem chamadas de rede no scaffold/scan; `core/` usa só a stdlib Python onde possível.
+
+### Visão geral
+
+- **22 skills** em 8 fases SDLC, distribuídas em 2 plugins compostos (`plugins/core` com 11 skills do ciclo diário; `plugins/extended` com 11 skills opcionais de governança/arquitetura/análise).
+- **Hook PostToolUse** em `plugins/core/hooks/post-vault-write.py` — indexa cada `.md` salvo, rate-limited a 1 sinal / 5 s por vault.
+- **Biblioteca core** (`core/` na raiz + cópias em `plugins/{core,extended}/core/` para self-contained): paths, db, parser, scanner, frontmatter, regexes, git, i18n, migrations.
+- **CLI `sdlc-kit`** expõe: `init-db`, `scan`, `rebuild-db`, `status`, `version`.
+- **SQLite** em `.sdlc-kit/db.sqlite` (modo WAL); schema versionado via migrations idempotentes. Perder o DB é recuperável via `sdlc-kit rebuild-db`.
+
+### Contrato comum das skills
+
+Toda skill autora (adr, prd, epic, milestone, spec, trd, review, task, domain, design-system) implementa três ações:
+
+- **`list`** — enumeração read-only.
+- **`scaffold` / `new`** — copia template para o local certo; recusa overwrite sem `--force`.
+- **`transition`** — flipa o campo `status:` (ou `decision:`) ao longo de um lifecycle definido; idempotente.
+
+Cada script emite um único objeto JSON em stdout. Exit codes: `0` sucesso ou dry-run, `1` erro do usuário, `2` fatal.
+
+### Extensão
+
+Para adicionar uma skill nova:
+
+1. Desenhe triggers (inglês + pt-BR), personas e lifecycle.
+2. Scaffold `plugins/{core,extended}/skills/sdlc-<nome>/` com `SKILL.md` + `scripts/<nome>.py`.
+3. Respeite o contrato: JSON stdout, exit codes `0|1|2`, `--dry-run` obrigatório em mutações.
+4. Registre o type em `sync.py` (`REQUIRED_FIELDS_BY_TYPE`, `VALID_STATUS_BY_TYPE`).
+5. Adicione testes em `tests/test_<nome>_skill.py` usando os helpers em `tests/_skill_helpers.py`.

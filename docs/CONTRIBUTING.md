@@ -1,5 +1,7 @@
 # Contributing to SDLC Kit
 
+> 📖 **Também disponível em [Português (Brasil)](#contribuindo--português-brasil) abaixo.**
+
 Thanks for your interest in improving the SDLC Kit plugin. This document describes the engineering contract every change must honor: branching, commits, testing, and how to add a new skill.
 
 ## Ground rules
@@ -124,3 +126,50 @@ Before opening a PR:
 - [ ] `CHANGELOG.md` updated under `## Unreleased` when the change is user-visible
 
 Open the PR with `gh pr create`, referencing any related ADR or issue in the description.
+
+---
+---
+
+## Contribuindo — Português (Brasil)
+
+> A versão canônica é a **inglesa acima**. Esta seção resume o essencial em português.
+
+Obrigado pelo interesse em melhorar o plugin SDLC Kit.
+
+### Regras
+
+- **Política de idioma.** Todo código, SKILL.md, templates e docs em inglês. O LLM espelha o idioma do chat em tempo de execução — ver [ADR-0004](decisions/ADR-0004-i18n-strategy.md).
+- **Local-first.** Sem chamadas de rede no scaffold ou scan.
+- **Stdlib-first.** `core/` usa apenas a stdlib Python quando possível. Dependências opcionais ficam atrás de extras no `pyproject.toml`.
+- **Idempotência.** Todo script de skill deve ser seguro de re-executar. `--dry-run` é a resposta default.
+
+### Branch e commits
+
+1. Puxe `main` atualizado, verifique working tree limpo.
+2. Crie branch com prefixo `claude/` + tipo Conventional Commits + slug:
+   - `claude/feat/<slug>` — nova capacidade
+   - `claude/fix/<slug>` — correção
+   - `claude/refactor/<slug>` — refactoring sem mudança de comportamento
+   - `claude/docs/<slug>` — docs
+   - `claude/test/<slug>` — testes
+3. Prefira um `git worktree` (ex: `.worktrees/<slug>`) para manter `main` limpo.
+4. Nunca commite feature work direto na `main`.
+
+### Conventional Commits
+
+Formato `<type>(<scope>): <subject>` — `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, etc.
+
+### Adicionando uma skill nova
+
+1. Desenhe triggers (EN + pt-BR), personas, lifecycle.
+2. Scaffold `plugins/{core,extended}/skills/sdlc-<nome>/` com `SKILL.md` + `scripts/<nome>.py`.
+3. Respeite o contrato: JSON stdout, exit codes `0|1|2`, `--dry-run` obrigatório em mutações.
+4. Registre em `sync.py` (`REQUIRED_FIELDS_BY_TYPE`, `VALID_STATUS_BY_TYPE`).
+5. Adicione testes em `tests/test_<nome>_skill.py`.
+
+### Antes de abrir PR
+
+- [ ] `pytest` passa (todos os testes verdes)
+- [ ] `ruff check .` e `mypy core plugins tests` limpos
+- [ ] Sem segredos ou caminhos absolutos commitados
+- [ ] `CHANGELOG.md` atualizado em `## Unreleased` se a mudança for user-visible

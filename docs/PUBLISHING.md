@@ -1,5 +1,7 @@
 # Publishing SDLC Kit
 
+> 📖 **Também disponível em [Português (Brasil)](#publicando--português-brasil) abaixo.**
+
 How to publish new versions of the plugin to users — both through our own
 vendor marketplace (available the instant a tag is pushed) and through the
 official Anthropic directory (curated, reviewed).
@@ -115,7 +117,7 @@ an authenticated in-app form:
 - [platform.claude.com/plugins/submit](https://platform.claude.com/plugins/submit)
 - Short URL: [clau.de/plugin-directory-submission](https://clau.de/plugin-directory-submission)
 
-Log in as a Vellus AI maintainer, fill the form (plugin name, repo URL,
+Log in as a Vellus maintainer, fill the form (plugin name, repo URL,
 description, category, security/trust attestations), and submit.
 
 ### What Anthropic reviews
@@ -211,3 +213,47 @@ directory only accepts public repos.
 - [Plugins reference (manifest schema)](https://code.claude.com/docs/en/plugins-reference)
 - [`anthropics/claude-plugins-official`](https://github.com/anthropics/claude-plugins-official)
 - [claude.ai plugin submission form](https://claude.ai/settings/plugins/submit)
+
+---
+---
+
+## Publicando — Português (Brasil)
+
+> A versão canônica é a **inglesa acima**. Esta seção resume o essencial em português.
+
+### Tracks de publicação
+
+| Track | Curadoria | Tempo até disponibilidade | Comando de instalação |
+|---|---|---|---|
+| **A — Vendor marketplace** (este repo) | self-serve | assim que a tag é pushed | `/plugin marketplace add vellus-ai/sdlc-kit` + `/plugin install sdlc-kit@sdlc-kit` |
+| **B — Diretório oficial Anthropic** | revisão Anthropic | async (sem SLA publicado) | `/plugin install sdlc-kit@claude-plugins-official` |
+
+Ambos tracks podem rodar em paralelo. **Track A é nosso caminho canônico de instalação.** Track B é bônus de descoberta.
+
+### Pre-flight checklist (obrigatório nos dois tracks)
+
+Antes de cortar qualquer release, todo item deve estar marcado:
+
+- [ ] Todos os testes passam localmente: `py -m pytest -q -p no:randomly`
+- [ ] Gate de cobertura passa: `py -m coverage combine && py -m coverage report --fail-under=80`
+- [ ] Auditoria de registry limpa: `py scripts/audit_registry.py` → `status: ok`, sem drift
+- [ ] Ruff limpo: `py -m ruff check core/ plugins/ tests/ scripts/`
+- [ ] `CHANGELOG.md` tem entrada para a nova versão (não `[Unreleased]`)
+- [ ] `README.md` cita a versão correta no badge
+- [ ] Sem referências mortas: `grep -rn "sdlc-kit:sprint\|sdlc-kit:tasks" --include="*.md"` retorna zero
+- [ ] `plugins/core/.claude-plugin/plugin.json` e `plugins/extended/.claude-plugin/plugin.json` têm a nova versão
+- [ ] `.claude-plugin/marketplace.json` declara os 2 plugins
+- [ ] `pyproject.toml` tem a mesma versão
+
+### Tag e push
+
+```bash
+git tag -a vX.Y.Z -m "Release vX.Y.Z — <highlight>"
+git push origin vX.Y.Z
+```
+
+O `.github/workflows/release.yml` lê a seção do CHANGELOG da tag e cria a GitHub Release automaticamente.
+
+### Submissão ao diretório oficial Anthropic
+
+Faça login como mantenedor Vellus, preencha o formulário ([`claude.ai/settings/plugins/submit`](https://claude.ai/settings/plugins/submit)) com nome do plugin, URL do repositório, categoria. A revisão é assíncrona.

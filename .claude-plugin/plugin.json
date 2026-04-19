@@ -3,9 +3,9 @@
   "version": "0.3.3",
   "description": "Spec-Driven Development vault for Claude Code projects \u2014 23 skills across 8 canonical phases, SDD/DDD/C4, dashboard, git worktrees, traceability + impact analysis",
   "author": {
-    "name": "Vellus AI",
+    "name": "Vellus",
     "email": "contato@vellus.tech",
-    "url": "https://github.com/vellus-ai"
+    "url": "https://vellus.tech/"
   },
   "homepage": "https://github.com/vellus-ai/sdlc-kit",
   "repository": "https://github.com/vellus-ai/sdlc-kit",

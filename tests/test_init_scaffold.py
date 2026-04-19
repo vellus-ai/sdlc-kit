@@ -18,8 +18,8 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SCRIPT = REPO_ROOT / "skills" / "sdlc-init" / "scripts" / "scaffold.py"
-VAULT_TREE = REPO_ROOT / "assets" / "vault-tree"
+SCRIPT = REPO_ROOT / "plugins" / "core" / "skills" / "sdlc-init" / "scripts" / "scaffold.py"
+VAULT_TREE = REPO_ROOT / "plugins" / "core" / "assets" / "vault-tree"
 
 
 # Canonical phases shipped with the kit. If this list changes, the scaffold

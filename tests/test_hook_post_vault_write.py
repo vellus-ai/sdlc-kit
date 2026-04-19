@@ -9,7 +9,7 @@ from pathlib import Path
 from tests._skill_helpers import make_vault
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
-HOOK_SCRIPT = PLUGIN_ROOT / "hooks" / "post-vault-write.py"
+HOOK_SCRIPT = PLUGIN_ROOT / "plugins" / "core" / "hooks" / "post-vault-write.py"
 
 
 def _invoke_hook(vault: Path, md_path: Path, tool_name: str = "Write") -> subprocess.CompletedProcess:

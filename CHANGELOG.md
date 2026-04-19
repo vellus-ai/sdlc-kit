@@ -1,11 +1,99 @@
 # Changelog
 
-Todas as mudanças notáveis deste projeto são documentadas aqui.
+All notable changes to this project are documented here.
 
-Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
-aderindo ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), adhering to [Semantic Versioning](https://semver.org/).
+
+Todas as mudanças notáveis deste projeto são documentadas aqui. Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/), aderindo ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
+
+> Starting from v0.4.0, release notes are written bilingually: English first (authoritative), Portuguese (Brazil) second. / A partir da v0.4.0, os release notes são bilíngues: inglês primeiro (autoritativo), português (Brasil) depois.
 
 ## [Unreleased]
+
+## [0.4.0] — 2026-04-19
+
+### Changed — split into two composable plugins
+
+The monolithic `sdlc-kit` plugin (v0.3.x, 23 skills) was split into **two composable plugins** in the same marketplace:
+
+- **`sdlc-kit`** (core — **11 skills**): the daily PR loop — `init`, `sync`, `status`, `dash`, `prd`, `adr`, `spec`, `task`, `worktree`, `review`, `retro`. Ships the PostToolUse hook, `plugins/core/assets/vault-tree/` and the shared `core/` library.
+- **`sdlc-kit-extended`** (**11 optional skills**): governance (`trd`, `epic`, `milestone`, `steer`), architecture/domain (`c4`, `api`, `domain`, `design-system`), ops/analysis (`incident`, `trace`, `impact`). Requires the core plugin.
+
+Both plugins live in the same monorepo `vellus-ai/sdlc-kit`. Install:
+
+```
+/plugin marketplace add vellus-ai/sdlc-kit
+/plugin install sdlc-kit@sdlc-kit            # core
+/plugin install sdlc-kit-extended@sdlc-kit   # optional
+```
+
+### Removed
+
+- Skill `/sdlc-kit:doc` deleted (generic fallback that did not implement the canonical contract).
+- Net: **23 → 22 skills** (11 core + 11 extended).
+
+### Added
+
+- `plugins/core/` and `plugins/extended/` directories, each with their own `.claude-plugin/plugin.json`.
+- `.claude-plugin/marketplace.json` declares the 2 plugins with `source: ./plugins/core` and `source: ./plugins/extended`.
+- `LICENSE` (MIT, © 2026 Vellus — https://vellus.tech/) at the repo root.
+- `PRIVACY.md` at the repo root (bilingual EN/PT-BR) for the Anthropic marketplace submission.
+- Polished bilingual READMEs at root, `plugins/core/` and `plugins/extended/`.
+- 18 `references/flow.md` files loaded on demand — the Flow / Pre-approval checklist / Examples / Output contract sections moved out of `SKILL.md` to reduce token budget.
+- **Bilingual documentation standard** — all `.md` docs (README, PRIVACY, CHANGELOG, CLAUDE, ARCHITECTURE, CONTRIBUTING, PUBLISHING, TESTING, ADRs) are now bilingual (EN primary + PT-BR section).
+
+### Improved — plugin cognitive cost
+
+- **Total SKILL.md lines: ~5818 → ~1090 (-81%).** Each skill now has ≤ 72 lines (description + when-to-invoke + pointer). Duplicate pt-BR triggers removed from `description:` fields. Reduces Claude Code's token budget when loading the plugin.
+
+### Fixed
+
+- `pyproject.toml` bumped to `0.4.0` + `packages = ["core"]` (was stale).
+- `scripts/audit_registry.py` now points at `plugins/core/…` paths.
+- `tests/_skill_helpers.SKILLS_DIRS` is now a tuple of both plugin skill directories; `_resolve_script(…)` finds a script transparently between `plugins/core/` and `plugins/extended/`. Existing tests require no knowledge of which plugin owns which skill.
+- 5 dead references to `/sdlc-kit:doc` cleaned from README/CLAUDE.md.tpl.
+- Owner/author renamed from "Vellus AI" to "Vellus"; site link set to `https://vellus.tech/`.
+
+### Pending (follow-ups for v0.4.1+)
+
+- 4 long SKILL.md files for utilities still exceed the target (`sdlc-init` 281, `sdlc-sync` 193, `sdlc-status` 132, `sdlc-dash` 225) — optional slim in a separate PR.
+- `core/` is duplicated in 3 locations (root canonical + 2 plugins) — factor into a shared PyPI package in a next major.
+- `/sdlc-kit:util:*` namespace suggestion parked for v0.5.0.
+
+---
+
+### Mudado — split em dois plugins compostos (pt-BR)
+
+O plugin monolítico `sdlc-kit` (v0.3.x, 23 skills) foi dividido em **dois plugins compostos** no mesmo marketplace:
+
+- **`sdlc-kit`** (core — **11 skills**): ciclo de PR diário — `init`, `sync`, `status`, `dash`, `prd`, `adr`, `spec`, `task`, `worktree`, `review`, `retro`. Traz o hook PostToolUse, `plugins/core/assets/vault-tree/` e a biblioteca `core/`.
+- **`sdlc-kit-extended`** (**11 skills opcionais**): governança (`trd`, `epic`, `milestone`, `steer`), arquitetura/domínio (`c4`, `api`, `domain`, `design-system`), ops/análise (`incident`, `trace`, `impact`). Requer o plugin core.
+
+### Removido (pt-BR)
+
+- Skill `/sdlc-kit:doc` deletada (fallback genérico que não implementava o contrato canônico).
+- Total: **23 → 22 skills** (11 core + 11 extended).
+
+### Adicionado (pt-BR)
+
+- Diretórios `plugins/core/` e `plugins/extended/` com `.claude-plugin/plugin.json` próprios.
+- `.claude-plugin/marketplace.json` declara os 2 plugins.
+- `LICENSE` (MIT, © 2026 Vellus — https://vellus.tech/) na raiz do repo.
+- `PRIVACY.md` bilíngue na raiz para submissão ao marketplace Anthropic.
+- READMEs bilíngues caprichados em raiz, `plugins/core/` e `plugins/extended/`.
+- Padrão **documentação bilíngue** — todos os `.md` (README, PRIVACY, CHANGELOG, CLAUDE, ARCHITECTURE, CONTRIBUTING, PUBLISHING, TESTING, ADRs) agora têm seção inglesa (primária) + seção pt-BR.
+
+### Melhorado — custo cognitivo do plugin (pt-BR)
+
+- **Total SKILL.md: ~5818 → ~1090 linhas (-81%).** Triggers pt-BR duplicados removidos. Reduz o token budget do Claude Code.
+
+### Corrigido (pt-BR)
+
+- `pyproject.toml` em `0.4.0` + `packages = ["core"]`.
+- `scripts/audit_registry.py` aponta para `plugins/core/...`.
+- `tests/_skill_helpers.SKILLS_DIRS` resolve scripts dinamicamente em ambos os plugins.
+- 5 referências mortas a `/sdlc-kit:doc` limpas.
+- Owner/author renomeado de "Vellus AI" para "Vellus"; site link `https://vellus.tech/`.
 
 ## [0.3.3] — 2026-04-18
 
@@ -203,5 +291,6 @@ antes de `approved`).
 - `.claude-plugin/plugin.json` — manifest com hook PostToolUse e descoberta de skills
 - `pyproject.toml` — pacote Python instalável, entry point `sdlc-kit`
 
-[Unreleased]: https://github.com/vellus-ai/sdlc-kit/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/vellus-ai/sdlc-kit/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/vellus-ai/sdlc-kit/releases/tag/v0.4.0
 [0.1.0]: https://github.com/vellus-ai/sdlc-kit/releases/tag/v0.1.0
