@@ -23,8 +23,8 @@ import sys
 from pathlib import Path
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
-TEMPLATES_GLOB = "assets/vault-tree/**/_templates/**/*.md.tpl"
-SYNC_SCRIPT = PLUGIN_ROOT / "skills" / "sdlc-sync" / "scripts" / "sync.py"
+TEMPLATES_GLOB = "plugins/core/assets/vault-tree/**/_templates/**/*.md.tpl"
+SYNC_SCRIPT = PLUGIN_ROOT / "plugins" / "core" / "skills" / "sdlc-sync" / "scripts" / "sync.py"
 
 # Types that exist in the registry even though no template emits them, because
 # they're generated programmatically by the librarian itself.

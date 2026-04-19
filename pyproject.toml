@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sdlc-kit"
-version = "0.3.3"
+version = "0.4.0"
 requires-python = ">=3.11"
 dependencies = []
 
@@ -21,8 +21,13 @@ yaml = ["pyyaml>=6"]
 [project.scripts]
 sdlc-kit = "core.cli:main"
 
+# After the v0.4.0 split, the canonical Python library is `core/` at the repo
+# root. Each plugin (`plugins/core/`, `plugins/extended/`) carries a duplicated
+# copy of `core/` for self-containment when installed via `/plugin install`,
+# but `pip install -e .` only registers the root package — that's what the
+# test suite imports as `from core.xxx import …`.
 [tool.setuptools]
-packages = ["core", "hooks", "skills"]
+packages = ["core"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -35,7 +40,7 @@ markers = [
 branch = true
 parallel = true
 concurrency = ["multiprocessing", "thread"]
-source = ["core", "skills", "hooks"]
+source = ["core", "plugins/core", "plugins/extended"]
 omit = [
     "*/__pycache__/*",
     "*/migrations/*",
