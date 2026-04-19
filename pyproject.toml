@@ -40,7 +40,10 @@ markers = [
 branch = true
 parallel = true
 concurrency = ["multiprocessing", "thread"]
-source = ["core", "plugins/core", "plugins/extended"]
+# Track the canonical library at root (pip install -e . registers this one)
+# and the skill scripts + hook under plugins/. Do NOT track plugins/*/core/
+# — those are duplicated self-contained copies that tests never import from.
+source = ["core", "plugins/core/skills", "plugins/core/hooks", "plugins/extended/skills"]
 omit = [
     "*/__pycache__/*",
     "*/migrations/*",
