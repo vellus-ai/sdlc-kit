@@ -806,9 +806,15 @@ def sync_managed_assets(vault_root: Path, plugin_root: Path, *, dry_run: bool) -
     """Copy static assets from the plugin's assets/vault-tree/ into the vault root.
 
     Currently manages: dashboard.html
+    Supports two layouts:
+      - installed cache: <plugin_root>/assets/vault-tree/
+      - source tree:     <plugin_root>/plugins/core/assets/vault-tree/
     Returns list of paths that were copied (empty on dry-run or if up-to-date).
     """
-    assets_src = plugin_root / "plugins" / "core" / "assets" / "vault-tree"
+    # Try installed-cache layout first, fall back to source-tree layout
+    assets_src = plugin_root / "assets" / "vault-tree"
+    if not assets_src.exists():
+        assets_src = plugin_root / "plugins" / "core" / "assets" / "vault-tree"
     managed: list[tuple[Path, Path]] = [
         (assets_src / "dashboard.html", vault_root / "dashboard.html"),
     ]

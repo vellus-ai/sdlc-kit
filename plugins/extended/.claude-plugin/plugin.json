@@ -1,6 +1,6 @@
 {
   "name": "sdlc-kit-extended",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Extended skills for SDLC Kit — 11 skills adding governance (trd, epic, milestone, steer), architecture & domain (c4, api, domain, design-system) and operations/analysis (incident, trace, impact). Requires sdlc-kit core.",
   "author": {
     "name": "Vellus",
