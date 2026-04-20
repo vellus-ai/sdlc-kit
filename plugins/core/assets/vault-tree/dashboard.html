@@ -157,6 +157,18 @@
     .wikilink { color: var(--accent-hover); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; background: none; border: none; padding: 0; font: inherit; }
     .wikilink:hover { color: var(--accent); }
     #no-file { color: var(--text-sec); font-size: 0.95rem; padding: 2rem 0; }
+    /* STATUS PROMOTION */
+    .status-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-light); }
+    .status-btn { font-size: 0.8rem; font-weight: 500; padding: 4px 12px; border-radius: 6px; border: 1px solid; cursor: pointer; transition: all 0.15s ease; white-space: nowrap; }
+    .status-btn-accept { color: #16a34a; border-color: #16a34a; background: #f0fdf4; }
+    .status-btn-accept:hover { background: #16a34a; color: #fff; }
+    .status-btn-reject { color: #dc2626; border-color: #dc2626; background: #fef2f2; }
+    .status-btn-reject:hover { background: #dc2626; color: #fff; }
+    .status-btn-neutral { color: var(--accent-hover); border-color: var(--accent-hover); background: var(--accent-soft); }
+    .status-btn-neutral:hover { background: var(--accent-hover); color: #fff; }
+    /* MERMAID */
+    .mermaid { background: var(--white); border: 1px solid var(--border-light); border-radius: 8px; padding: 1rem; margin: 0.8rem 0; overflow-x: auto; text-align: center; }
+    .mermaid-loading { color: var(--text-muted); font-size: 0.85rem; font-style: italic; }
   </style>
 </head>
 <body>
@@ -268,6 +280,52 @@ let fileIndex = {}; // stem -> { handle, path, groupName }
 let activeFilePath = null;
 
 /* =========================================================
+   STATUS TRANSITIONS
+   ========================================================= */
+const STATUS_TRANSITIONS = {
+  'adr':              [{ from:'proposed',    to:'accepted',    label:'→ accepted',    cls:'accept'  },
+                       { from:'proposed',    to:'rejected',    label:'→ rejected',    cls:'reject'  },
+                       { from:'accepted',    to:'superseded',  label:'→ superseded',  cls:'neutral' },
+                       { from:'accepted',    to:'deprecated',  label:'→ deprecated',  cls:'neutral' }],
+  'trd':              [{ from:'draft',       to:'approved',    label:'→ approved',    cls:'accept'  },
+                       { from:'approved',    to:'deprecated',  label:'→ deprecated',  cls:'neutral' }],
+  'prd':              [{ from:'draft',       to:'in-review',   label:'→ in-review',   cls:'neutral' },
+                       { from:'in-review',   to:'accepted',    label:'→ accepted',    cls:'accept'  },
+                       { from:'accepted',    to:'active',      label:'→ active',      cls:'neutral' },
+                       { from:'active',      to:'done',        label:'→ done',        cls:'accept'  }],
+  'epic':             [{ from:'planned',     to:'in-progress', label:'→ in-progress', cls:'neutral' },
+                       { from:'in-progress', to:'done',        label:'→ done',        cls:'accept'  },
+                       { from:'in-progress', to:'cancelled',   label:'→ cancelled',   cls:'reject'  }],
+  'spec-requirements':[{ from:'draft',       to:'in-review',   label:'→ in-review',   cls:'neutral' },
+                       { from:'in-review',   to:'accepted',    label:'→ accepted',    cls:'accept'  },
+                       { from:'accepted',    to:'active',      label:'→ active',      cls:'neutral' },
+                       { from:'active',      to:'done',        label:'→ done',        cls:'accept'  }],
+  'spec-design':      [{ from:'draft',       to:'in-review',   label:'→ in-review',   cls:'neutral' },
+                       { from:'in-review',   to:'accepted',    label:'→ accepted',    cls:'accept'  },
+                       { from:'accepted',    to:'active',      label:'→ active',      cls:'neutral' },
+                       { from:'active',      to:'done',        label:'→ done',        cls:'accept'  }],
+  'spec-tasks':       [{ from:'draft',       to:'in-review',   label:'→ in-review',   cls:'neutral' },
+                       { from:'in-review',   to:'accepted',    label:'→ accepted',    cls:'accept'  },
+                       { from:'accepted',    to:'active',      label:'→ active',      cls:'neutral' },
+                       { from:'active',      to:'done',        label:'→ done',        cls:'accept'  }],
+  'worktree':         [{ from:'open',        to:'in-progress', label:'→ in-progress', cls:'neutral' },
+                       { from:'in-progress', to:'merged',      label:'→ merged',      cls:'accept'  },
+                       { from:'in-progress', to:'closed',      label:'→ closed',      cls:'reject'  }],
+  'branch':           [{ from:'open',        to:'in-progress', label:'→ in-progress', cls:'neutral' },
+                       { from:'in-progress', to:'merged',      label:'→ merged',      cls:'accept'  },
+                       { from:'in-progress', to:'closed',      label:'→ closed',      cls:'reject'  }],
+  'retro':            [{ from:'draft',       to:'final',       label:'→ final',       cls:'accept'  }],
+  'review':           [{ from:'draft',       to:'final',       label:'→ final',       cls:'accept'  }],
+  'incident':         [{ from:'open',        to:'resolved',    label:'→ resolved',    cls:'accept'  }],
+  'c4-context':       [{ from:'draft',       to:'approved',    label:'→ approved',    cls:'accept'  },
+                       { from:'approved',    to:'deprecated',  label:'→ deprecated',  cls:'neutral' }],
+  'c4-container':     [{ from:'draft',       to:'approved',    label:'→ approved',    cls:'accept'  },
+                       { from:'approved',    to:'deprecated',  label:'→ deprecated',  cls:'neutral' }],
+  'c4-component':     [{ from:'draft',       to:'approved',    label:'→ approved',    cls:'accept'  },
+                       { from:'approved',    to:'deprecated',  label:'→ deprecated',  cls:'neutral' }],
+};
+
+/* =========================================================
    INDEXEDDB — persist directory handle
    ========================================================= */
 const DB_NAME = 'sdlc-dashboard';
@@ -338,6 +396,44 @@ async function reconnectVault() {
   }
 }
 
+/* =========================================================
+   WRITE PERMISSION + STATUS PROMOTION
+   ========================================================= */
+async function ensureWritePermission() {
+  if (!rootHandle) return false;
+  let perm = await rootHandle.queryPermission({ mode: 'readwrite' });
+  if (perm === 'granted') return true;
+  perm = await rootHandle.requestPermission({ mode: 'readwrite' });
+  return perm === 'granted';
+}
+
+async function promoteStatus(info, newStatus) {
+  const ok = await ensureWritePermission();
+  if (!ok) { alert('Permissão de escrita necessária para atualizar o status.'); return; }
+  try {
+    const file = await info.handle.getFile();
+    const raw = await file.text();
+    const today = new Date().toISOString().slice(0, 10);
+    // Restrict replacements to the frontmatter block (between the two --- delimiters)
+    const fmEnd = raw.indexOf('\n---', 3);
+    const fm = fmEnd > 0 ? raw.slice(0, fmEnd) : raw;
+    const body = fmEnd > 0 ? raw.slice(fmEnd) : '';
+    const updatedFm = fm
+      .replace(/^(status:\s*).*$/m, `$1${newStatus}`)
+      .replace(/^(updated:\s*).*$/m, `$1${today}`);
+    const updated = updatedFm + body;
+    const writable = await info.handle.createWritable();
+    try {
+      await writable.write(updated);
+    } finally {
+      await writable.close();
+    }
+    renderDocument(updated, info);
+  } catch (err) {
+    alert('Erro ao salvar: ' + err.message);
+  }
+}
+
 async function loadVault(handle) {
   rootHandle = handle;
   fileIndex = {};
@@ -362,7 +458,11 @@ async function buildFileIndex(dirHandle, prefix) {
       const path = prefix ? `${prefix}/${name}` : name;
       const groupName = prefix || '';
       const normStem = normalizeStem(stem);
-      fileIndex[normStem] = { handle: entry, path, groupName, stem, name };
+      // Prefer non-template files: don't let a _templates entry overwrite a real file
+      const isTemplate = groupName.toLowerCase().includes('_templates');
+      if (!fileIndex[normStem] || !isTemplate) {
+        fileIndex[normStem] = { handle: entry, path, groupName, stem, name };
+      }
     }
   }
 }
@@ -394,7 +494,8 @@ async function renderSidebar(dirHandle) {
     groupEl.className = 'tree-group';
 
     const label = document.createElement('div');
-    label.className = 'tree-group-label';
+    const autoCollapse = gName === '(raiz)' || gName.toLowerCase().endsWith('_templates');
+    label.className = 'tree-group-label' + (autoCollapse ? ' collapsed' : '');
     label.textContent = gName;
     label.onclick = () => {
       label.classList.toggle('collapsed');
@@ -402,7 +503,7 @@ async function renderSidebar(dirHandle) {
     };
 
     const filesEl = document.createElement('div');
-    filesEl.className = 'tree-files';
+    filesEl.className = 'tree-files' + (autoCollapse ? ' collapsed' : '');
 
     for (const info of files) {
       const fileEl = document.createElement('div');
@@ -449,13 +550,13 @@ async function loadFile(info) {
   try {
     const file = await info.handle.getFile();
     const raw = await file.text();
-    renderDocument(raw);
+    renderDocument(raw, info);
   } catch (err) {
     document.getElementById('content-inner').innerHTML = `<p style="color:var(--danger)">Erro ao ler arquivo: ${escHtml(err.message)}</p>`;
   }
 }
 
-function renderDocument(raw) {
+function renderDocument(raw, info) {
   const { frontmatter, body } = parseFrontmatter(raw);
   const inner = document.getElementById('content-inner');
   inner.innerHTML = '';
@@ -470,6 +571,25 @@ function renderDocument(raw) {
       tbl.appendChild(tr);
     }
     card.appendChild(tbl);
+
+    if (info) {
+      const docType = (frontmatter.type || '').trim().toLowerCase();
+      const currentStatus = (frontmatter.status || '').trim().toLowerCase();
+      const transitions = (STATUS_TRANSITIONS[docType] || []).filter(t => t.from === currentStatus);
+      if (transitions.length > 0) {
+        const actions = document.createElement('div');
+        actions.className = 'status-actions';
+        for (const t of transitions) {
+          const btn = document.createElement('button');
+          btn.className = `status-btn status-btn-${t.cls}`;
+          btn.textContent = t.label;
+          btn.onclick = () => promoteStatus(info, t.to);
+          actions.appendChild(btn);
+        }
+        card.appendChild(actions);
+      }
+    }
+
     inner.appendChild(card);
   }
 
@@ -494,6 +614,44 @@ function navigateWikilink(target) {
   } else {
     alert(`File not found: [[${target}]]`);
   }
+}
+
+/* =========================================================
+   MERMAID LAZY LOADER
+   ========================================================= */
+let _mermaidLoading = false;
+let _mermaidReady = false;
+
+function scheduleMermaidRender() {
+  if (_mermaidReady) {
+    // Already loaded — run on unprocessed diagrams only to avoid re-rendering
+    setTimeout(() => {
+      const pending = document.querySelectorAll('.mermaid:not([data-processed])');
+      if (pending.length && window.mermaid) window.mermaid.run({ nodes: Array.from(pending) });
+    }, 0);
+    return;
+  }
+  if (_mermaidLoading) return;
+  _mermaidLoading = true;
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js';
+  script.onload = () => {
+    _mermaidReady = true;
+    // strict: blocks HTML/JS in diagram labels (safe for shared vaults)
+    window.mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'strict' });
+    // Render all unprocessed diagrams currently in the DOM (navigation-safe)
+    const pending = document.querySelectorAll('.mermaid:not([data-processed])');
+    if (pending.length) window.mermaid.run({ nodes: Array.from(pending) });
+  };
+  script.onerror = () => {
+    // Offline fallback: replace .mermaid divs with code blocks
+    document.querySelectorAll('.mermaid').forEach(el => {
+      const pre = document.createElement('pre');
+      pre.innerHTML = `<code class="lang-mermaid">${escHtml(el.textContent)}</code>`;
+      el.replaceWith(pre);
+    });
+  };
+  document.head.appendChild(script);
 }
 
 /* =========================================================
@@ -538,7 +696,12 @@ function parseMarkdown(md) {
         i++;
       }
       i++; // consume closing ```
-      out.push(`<pre><code class="lang-${escHtml(lang)}">${escHtml(codeLines.join('\n'))}</code></pre>`);
+      if (lang === 'mermaid') {
+        out.push(`<div class="mermaid">${codeLines.join('\n')}</div>`);
+        scheduleMermaidRender();
+      } else {
+        out.push(`<pre><code class="lang-${escHtml(lang)}">${escHtml(codeLines.join('\n'))}</code></pre>`);
+      }
       continue;
     }
 

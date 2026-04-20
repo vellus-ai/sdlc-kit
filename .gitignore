@@ -11,3 +11,7 @@ build/
 coverage.xml
 htmlcov/
 .hypothesis/
+
+# SDLC vault — gerado pelo plugin, não deve subir (repo público)
+.sdlc/
+.sdlc-kit/
