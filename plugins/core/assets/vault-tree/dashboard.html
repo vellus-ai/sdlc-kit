@@ -39,6 +39,27 @@
     #health-dot.err { background: var(--danger); }
     #btn-open { background: var(--accent); color: #fff; border: 1px solid var(--accent); border-radius: 8px; padding: 8px 18px; font-size: 0.88rem; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all 0.15s ease; }
     #btn-open:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    /* UPDATE BUTTON */
+    #btn-update { position: relative; background: var(--white); color: var(--text-sec); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 0.88rem; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all 0.15s ease; display: flex; align-items: center; gap: 6px; }
+    #btn-update:hover { background: var(--bg-secondary); color: var(--text); border-color: var(--text-muted); }
+    #btn-update .update-badge { display: none; width: 8px; height: 8px; border-radius: 50%; background: var(--warning); flex-shrink: 0; }
+    #btn-update.has-update .update-badge { display: block; }
+    #btn-update.has-update { border-color: var(--warning); color: var(--text); }
+    /* UPDATE MODAL */
+    #update-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 200; align-items: center; justify-content: center; }
+    #update-overlay.open { display: flex; }
+    #update-modal { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem 1.75rem; max-width: 520px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+    #update-modal h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--text); }
+    #update-modal .version-row { display: flex; gap: 1.5rem; margin-bottom: 1rem; font-size: 0.88rem; }
+    #update-modal .version-row span { color: var(--text-sec); }
+    #update-modal .version-row strong { color: var(--text); }
+    #update-modal .cmd-block { background: var(--code-bg); border: 1px solid var(--border-light); border-radius: 8px; padding: 0.65rem 1rem; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 0.84rem; color: var(--text); display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.5rem; }
+    #update-modal .cmd-copy { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 0.8rem; font-weight: 500; padding: 2px 6px; border-radius: 4px; transition: all 0.15s; white-space: nowrap; }
+    #update-modal .cmd-copy:hover { background: var(--bg-secondary); color: var(--text); }
+    #update-modal .update-note { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.5; }
+    #update-modal .modal-footer { display: flex; justify-content: flex-end; gap: 0.5rem; }
+    #update-modal .btn-close { background: var(--bg-secondary); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 7px 18px; font-size: 0.88rem; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+    #update-modal .btn-close:hover { background: var(--border); }
     /* TABS NAV */
     nav { background: var(--white); border-bottom: 1px solid var(--border); display: flex; padding: 0 1.5rem; flex-shrink: 0; }
     .tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 12px 18px; font-size: 0.9rem; font-weight: 500; color: var(--tab-inactive); cursor: pointer; margin-bottom: -1px; transition: color 0.15s ease; }
@@ -176,8 +197,21 @@
 <header>
   <span id="project-name">SDLC Vault</span>
   <span id="health-dot" title="Vault OK"></span>
+  <button id="btn-update" onclick="checkPluginUpdate()" title="Verificar atualizações do plugin">
+    <span class="update-badge"></span>Update
+  </button>
   <button id="btn-open" onclick="openVault()">Open Vault</button>
 </header>
+
+<div id="update-overlay" onclick="if(event.target===this)closeUpdateModal()">
+  <div id="update-modal">
+    <h3 id="update-modal-title">Verificando atualizações…</h3>
+    <div id="update-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn-close" onclick="closeUpdateModal()">Fechar</button>
+    </div>
+  </div>
+</div>
 
 <nav>
   <button class="tab-btn active" data-tab="tab-documentos">Docs</button>
@@ -397,6 +431,111 @@ async function reconnectVault() {
 }
 
 /* =========================================================
+   PLUGIN UPDATE CHECK
+   ========================================================= */
+const PLUGIN_REPO = 'vellus-ai/sdlc-kit';
+
+async function readMarkerJson() {
+  if (!rootHandle) return null;
+  try {
+    const kitDir = await rootHandle.getDirectoryHandle('.sdlc-kit');
+    const f = await (await kitDir.getFileHandle('marker.json')).getFile();
+    return JSON.parse(await f.text());
+  } catch (_) { return null; }
+}
+
+async function fetchLatestRelease() {
+  try {
+    const r = await fetch(`https://api.github.com/repos/${PLUGIN_REPO}/releases/latest`);
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d.tag_name ? d.tag_name.replace(/^v/, '') : null;
+  } catch (_) { return null; }
+}
+
+function semverGt(a, b) {
+  const pa = String(a).split('.').map(Number);
+  const pb = String(b).split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    const diff = (pa[i] || 0) - (pb[i] || 0);
+    if (diff !== 0) return diff > 0;
+  }
+  return false;
+}
+
+function closeUpdateModal() {
+  document.getElementById('update-overlay').classList.remove('open');
+}
+
+function copyCmd(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copiado ✓';
+    setTimeout(() => { btn.textContent = 'Copiar'; }, 2000);
+  });
+}
+
+function renderUpdateModal(marker, latest) {
+  const current = marker ? marker.version : null;
+  const title = document.getElementById('update-modal-title');
+  const body = document.getElementById('update-modal-body');
+  const btn = document.getElementById('btn-update');
+
+  const cmdCore = `claude plugin install ${PLUGIN_REPO.split('/')[1]}`;
+  const cmdExt  = `claude plugin install ${PLUGIN_REPO.split('/')[1]}-extended`;
+
+  if (!latest) {
+    title.textContent = 'Não foi possível verificar';
+    body.innerHTML = `<p class="update-note">Sem conexão com o GitHub. Verifique manualmente em:<br><a href="https://github.com/${PLUGIN_REPO}/releases" target="_blank" rel="noopener">github.com/${PLUGIN_REPO}/releases</a></p>`;
+    btn.classList.remove('has-update');
+    return;
+  }
+
+  const hasUpdate = current ? semverGt(latest, current) : false;
+  btn.classList.toggle('has-update', hasUpdate);
+
+  if (!hasUpdate) {
+    title.textContent = 'Você está na versão mais recente';
+    body.innerHTML = `
+      <div class="version-row">
+        <div><span>Instalado</span><br><strong>v${current || '?'}</strong></div>
+        <div><span>Mais recente</span><br><strong>v${latest}</strong></div>
+      </div>
+      <p class="update-note">Nenhuma ação necessária. Para reinstalar:<br>
+      Execute o comando abaixo no terminal onde usa o Claude Code.</p>
+      ${cmdBlock(cmdCore)}`;
+    return;
+  }
+
+  title.textContent = 'Atualização disponível';
+  body.innerHTML = `
+    <div class="version-row">
+      <div><span>Instalado</span><br><strong>v${current}</strong></div>
+      <div><span>Disponível</span><br><strong style="color:var(--warning)">v${latest}</strong></div>
+    </div>
+    <p class="update-note">Execute o(s) comando(s) abaixo no terminal onde usa o Claude Code:</p>
+    ${cmdBlock(cmdCore)}
+    ${cmdBlock(cmdExt)}
+    <p class="update-note" style="margin-top:0.5rem">Se não usar o extended, ignore o segundo comando.</p>`;
+}
+
+function cmdBlock(cmd) {
+  const id = 'cb_' + Math.random().toString(36).slice(2);
+  return `<div class="cmd-block"><code>${escHtml(cmd)}</code><button class="cmd-copy" id="${id}" onclick="copyCmd('${escHtml(cmd)}', this)">Copiar</button></div>`;
+}
+
+async function checkPluginUpdate(showModal = true) {
+  if (showModal) document.getElementById('update-overlay').classList.add('open');
+  const [marker, latest] = await Promise.all([readMarkerJson(), fetchLatestRelease()]);
+  if (showModal) renderUpdateModal(marker, latest);
+  // Update badge silently
+  const btn = document.getElementById('btn-update');
+  if (marker && latest && semverGt(latest, marker.version)) {
+    btn.classList.add('has-update');
+    btn.title = `Atualização disponível: v${latest}`;
+  }
+}
+
+/* =========================================================
    WRITE PERMISSION + STATUS PROMOTION
    ========================================================= */
 async function ensureWritePermission() {
@@ -441,6 +580,8 @@ async function loadVault(handle) {
   await renderSidebar(handle);
   await updateProjectName(handle);
   showVaultUI();
+  // Silent background update check — shows badge only, no modal
+  checkPluginUpdate(false).catch(() => {});
   // Pre-load delivery data
   await renderKanban();
   await renderEpicosTab();
