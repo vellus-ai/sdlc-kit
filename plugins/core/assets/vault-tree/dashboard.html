@@ -397,7 +397,10 @@ const STATUS_TRANSITIONS = {
 /* =========================================================
    INDEXEDDB — persist directory handle
    ========================================================= */
-const DB_NAME = 'sdlc-dashboard';
+const _urlParts = window.location.pathname.split('/').filter(Boolean);
+const _projectSlug = (_urlParts[_urlParts.length - 3] || 'default')
+  .replace(/[^a-zA-Z0-9]/g, '-').toLowerCase().slice(0, 30);
+const DB_NAME = 'sdlc-' + _projectSlug;
 const DB_STORE = 'handles';
 const DB_KEY = 'root';
 
