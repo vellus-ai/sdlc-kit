@@ -57,9 +57,13 @@
     #update-modal .cmd-copy { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 0.8rem; font-weight: 500; padding: 2px 6px; border-radius: 4px; transition: all 0.15s; white-space: nowrap; }
     #update-modal .cmd-copy:hover { background: var(--bg-secondary); color: var(--text); }
     #update-modal .update-note { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.5; }
-    #update-modal .modal-footer { display: flex; justify-content: flex-end; gap: 0.5rem; }
+    #update-modal .modal-footer { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
     #update-modal .btn-close { background: var(--bg-secondary); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 7px 18px; font-size: 0.88rem; font-weight: 500; cursor: pointer; transition: all 0.15s; }
     #update-modal .btn-close:hover { background: var(--border); }
+    #update-modal .btn-script { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 7px 18px; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    #update-modal .btn-script:hover { background: var(--accent-dark, #1a5fc8); }
+    #update-modal .btn-script:disabled { opacity: 0.6; cursor: default; }
+    #update-modal .copy-notice { font-size: 0.8rem; color: var(--text-muted); }
     /* TABS NAV */
     nav { background: var(--white); border-bottom: 1px solid var(--border); display: flex; padding: 0 1.5rem; flex-shrink: 0; }
     .tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 12px 18px; font-size: 0.9rem; font-weight: 500; color: var(--tab-inactive); cursor: pointer; margin-bottom: -1px; transition: color 0.15s ease; }
@@ -238,7 +242,11 @@
     <h3 id="update-modal-title">Verificando atualizações…</h3>
     <div id="update-modal-body"></div>
     <div class="modal-footer">
-      <button class="btn-close" onclick="closeUpdateModal()">Fechar</button>
+      <span class="copy-notice" id="update-copy-notice"></span>
+      <div style="display:flex;gap:0.5rem">
+        <button class="btn-script" id="btn-generate-script" style="display:none" onclick="generateUpdateScript()">Gerar script .bat</button>
+        <button class="btn-close" onclick="closeUpdateModal()">Fechar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -539,6 +547,9 @@ function renderUpdateModal(marker, latest) {
   const hasUpdate = current ? semverGt(latest, current) : false;
   btn.classList.toggle('has-update', hasUpdate);
 
+  const scriptBtn = document.getElementById('btn-generate-script');
+  const copyNotice = document.getElementById('update-copy-notice');
+
   if (!hasUpdate) {
     title.textContent = 'Você está na versão mais recente';
     body.innerHTML = `
@@ -549,6 +560,8 @@ function renderUpdateModal(marker, latest) {
       <p class="update-note">Nenhuma ação necessária. Para reinstalar:<br>
       Execute o comando abaixo no terminal onde usa o Claude Code.</p>
       ${cmdBlock(cmdCore)}`;
+    if (scriptBtn) scriptBtn.style.display = 'none';
+    if (copyNotice) copyNotice.textContent = '';
     return;
   }
 
@@ -558,10 +571,41 @@ function renderUpdateModal(marker, latest) {
       <div><span>Instalado</span><br><strong>v${current}</strong></div>
       <div><span>Disponível</span><br><strong style="color:var(--warning)">v${latest}</strong></div>
     </div>
-    <p class="update-note">Execute o(s) comando(s) abaixo no terminal onde usa o Claude Code:</p>
+    <p class="update-note">Execute os comandos abaixo no terminal — ou clique em <strong>Gerar script .bat</strong> para um arquivo que pode ser executado com duplo clique.</p>
     ${cmdBlock(cmdCore)}
     ${cmdBlock(cmdExt)}
     <p class="update-note" style="margin-top:0.5rem">Se não usar o extended, ignore o segundo comando.</p>`;
+
+  if (scriptBtn) scriptBtn.style.display = '';
+  // Auto-copy main command to clipboard
+  navigator.clipboard.writeText(`${cmdCore}\n${cmdExt}`).then(() => {
+    if (copyNotice) { copyNotice.textContent = 'Comandos copiados para o clipboard ✓'; }
+  }).catch(() => {
+    if (copyNotice) copyNotice.textContent = '';
+  });
+}
+
+async function generateUpdateScript() {
+  if (!rootHandle) return;
+  const repoName = PLUGIN_REPO.split('/')[1];
+  const cmdCore = `claude plugin install ${repoName}@${repoName}`;
+  const cmdExt  = `claude plugin install ${repoName}-extended@${repoName}`;
+  const scriptContent = `@echo off\r\necho Atualizando ${repoName}...\r\n${cmdCore}\r\n${cmdExt}\r\necho.\r\necho Atualizado! Reabra o dashboard para ver a nova versao.\r\npause\r\n`;
+  const btn = document.getElementById('btn-generate-script');
+  try {
+    const fileHandle = await rootHandle.getFileHandle('_sdlc-update.bat', { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(scriptContent);
+    await writable.close();
+    btn.textContent = 'Script gerado ✓';
+    btn.disabled = true;
+    const notice = document.getElementById('update-copy-notice');
+    if (notice) notice.textContent = '_sdlc-update.bat criado — dê duplo clique para executar';
+    setTimeout(() => { btn.textContent = 'Gerar script .bat'; btn.disabled = false; }, 4000);
+  } catch (e) {
+    btn.textContent = 'Erro ao gerar';
+    setTimeout(() => { btn.textContent = 'Gerar script .bat'; }, 3000);
+  }
 }
 
 function cmdBlock(cmd) {
