@@ -830,7 +830,7 @@ def sync_managed_assets(vault_root: Path, plugin_root: Path, *, dry_run: bool) -
         if needs_update:
             if not dry_run:
                 shutil.copy2(src, dst)
-            copied.append(str(dst.relative_to(vault_root)).replace("\\", "/"))
+                copied.append(str(dst.relative_to(vault_root)).replace("\\", "/"))
     return copied
 
 
@@ -892,10 +892,21 @@ def main() -> None:
     try:
         copied = sync_managed_assets(vault_root, plugin_root, dry_run=args.dry_run)
         if copied:
-            report.anomalies.append({"kind": "info", "message": f"assets synced: {', '.join(copied)}"})
+            label = "would sync" if args.dry_run else "synced"
+            report.anomalies.append(Anomaly(
+                severity="info",
+                type="asset_sync",
+                file=", ".join(copied),
+                detail=f"managed assets {label}: {', '.join(copied)}",
+            ))
     except Exception as exc:
         # Non-fatal: asset sync failure should not block vault indexing
-        print(f"warning: asset sync failed: {exc}", file=sys.stderr)
+        report.anomalies.append(Anomaly(
+            severity="warning",
+            type="asset_sync_failed",
+            file="dashboard.html",
+            detail=f"asset sync failed: {exc}",
+        ))
 
     report.status = "dry-run" if args.dry_run else "ok"
     print(json.dumps(report.as_dict(), ensure_ascii=False))
