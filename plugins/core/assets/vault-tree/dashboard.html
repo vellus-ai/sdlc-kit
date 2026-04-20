@@ -125,6 +125,7 @@
     .btree-leaf.status-merged { opacity: 0.55; }
     .btree-leaf-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--border); border: 2px solid var(--accent); }
     .btree-leaf-dot.s-in-progress { background: var(--accent); border-color: var(--accent); }
+    .btree-leaf-dot.s-pr { background: #a855f7; border-color: #a855f7; }
     .btree-leaf-dot.s-merged { background: var(--success); border-color: var(--success); }
     .btree-leaf-dot.s-closed, .btree-leaf-dot.s-abandoned { background: var(--danger); border-color: var(--danger); }
     .btree-leaf-name { color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -132,6 +133,17 @@
     .btree-leaf-tasks { font-size: 0.72rem; color: var(--accent); white-space: nowrap; }
     .btree-leaf-pr { font-size: 0.72rem; color: var(--text-sec); font-style: italic; white-space: nowrap; }
     #graph-empty { display: none; flex: 1; align-items: center; justify-content: center; flex-direction: column; gap: 0.5rem; color: var(--text-sec); padding: 2rem; text-align: center; }
+    /* LEGEND */
+    #branch-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 1rem; padding: 0.6rem 1.5rem; border-bottom: 1px solid var(--border-light); background: var(--bg-secondary); font-size: 0.75rem; color: var(--text-sec); }
+    .blegend-item { display: flex; align-items: center; gap: 0.35rem; }
+    .blegend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .blegend-dot.s-open { background: var(--white); border: 2px solid var(--border); }
+    .blegend-dot.s-in-progress { background: var(--accent); }
+    .blegend-dot.s-pr { background: #a855f7; }
+    .blegend-dot.s-merged { background: var(--success); }
+    .blegend-dot.s-closed { background: var(--danger); }
+    .blegend-sep { color: var(--border); }
+    .blegend-hint { color: var(--text-sec); font-style: italic; }
     /* EPICOS & MILESTONES */
     #tab-epicos { flex-direction: row; }
     #epicos-sidebar { width: 220px; min-width: 160px; background: var(--white); border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; }
@@ -329,6 +341,15 @@
       </div>
     </div>
     <div id="tasks-view-graph" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
+      <div id="branch-legend">
+        <span class="blegend-item"><span class="blegend-dot s-open"></span>open</span>
+        <span class="blegend-item"><span class="blegend-dot s-in-progress"></span>in-progress</span>
+        <span class="blegend-item"><span class="blegend-dot s-pr"></span>PR aberto</span>
+        <span class="blegend-item"><span class="blegend-dot s-merged"></span>merged</span>
+        <span class="blegend-item"><span class="blegend-dot s-closed"></span>closed</span>
+        <span class="blegend-sep">·</span>
+        <span class="blegend-hint">docs em <code>05-development/</code> · delete o arquivo para remover da árvore</span>
+      </div>
       <div id="branch-graph-wrap">
         <div id="graph-empty" style="display:flex;">
           <p>Nenhuma branch encontrada.</p>
@@ -374,6 +395,7 @@
    STATE
    ========================================================= */
 let rootHandle = null;
+let _branchTasks = [];
 let fileIndex = {}; // stem -> { handle, path, groupName }
 let activeFilePath = null;
 
@@ -501,7 +523,7 @@ async function reconnectVault() {
    PLUGIN UPDATE CHECK
    ========================================================= */
 const PLUGIN_REPO = 'vellus-ai/sdlc-kit';
-const DASHBOARD_VERSION = '0.10.0';
+const DASHBOARD_VERSION = '0.11.0';
 
 async function readMarkerJson() {
   if (!rootHandle) return null;
@@ -1357,7 +1379,8 @@ async function renderKanban() {
   document.getElementById('count-progress').textContent = progressCount;
   document.getElementById('count-done').textContent = doneCount;
 
-  // Also render branch graph data (async — reads 05-development/ docs)
+  // Store tasks for re-render when user switches to Branches tab
+  _branchTasks = tasks;
   renderBranchGraph(tasks);
 }
 
@@ -1523,7 +1546,8 @@ async function renderBranchGraph(tasks) {
       leaf.className = `btree-leaf ${statusClass}`.trim();
 
       const dot = document.createElement('div');
-      const dotStatus = br.status === 'in-progress' ? 's-in-progress'
+      const dotStatus = br.pr ? 's-pr'
+        : br.status === 'in-progress' ? 's-in-progress'
         : br.status === 'merged' ? 's-merged'
         : (br.status === 'closed' || br.status === 'abandoned') ? 's-closed'
         : '';
@@ -1589,6 +1613,8 @@ function switchTasksView(view) {
     graph.style.display = 'flex';
     btnK.classList.remove('active');
     btnG.classList.add('active');
+    // Re-read 05-development/ docs on every switch to Branches tab
+    renderBranchGraph(_branchTasks);
   }
 }
 
