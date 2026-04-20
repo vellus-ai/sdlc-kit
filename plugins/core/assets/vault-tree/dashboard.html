@@ -414,12 +414,20 @@ async function promoteStatus(info, newStatus) {
     const file = await info.handle.getFile();
     const raw = await file.text();
     const today = new Date().toISOString().slice(0, 10);
-    const updated = raw
+    // Restrict replacements to the frontmatter block (between the two --- delimiters)
+    const fmEnd = raw.indexOf('\n---', 3);
+    const fm = fmEnd > 0 ? raw.slice(0, fmEnd) : raw;
+    const body = fmEnd > 0 ? raw.slice(fmEnd) : '';
+    const updatedFm = fm
       .replace(/^(status:\s*).*$/m, `$1${newStatus}`)
       .replace(/^(updated:\s*).*$/m, `$1${today}`);
+    const updated = updatedFm + body;
     const writable = await info.handle.createWritable();
-    await writable.write(updated);
-    await writable.close();
+    try {
+      await writable.write(updated);
+    } finally {
+      await writable.close();
+    }
     renderDocument(updated, info);
   } catch (err) {
     alert('Erro ao salvar: ' + err.message);
@@ -565,8 +573,8 @@ function renderDocument(raw, info) {
     card.appendChild(tbl);
 
     if (info) {
-      const docType = (frontmatter.type || '').trim();
-      const currentStatus = (frontmatter.status || '').trim();
+      const docType = (frontmatter.type || '').trim().toLowerCase();
+      const currentStatus = (frontmatter.status || '').trim().toLowerCase();
       const transitions = (STATUS_TRANSITIONS[docType] || []).filter(t => t.from === currentStatus);
       if (transitions.length > 0) {
         const actions = document.createElement('div');
@@ -616,34 +624,30 @@ let _mermaidReady = false;
 
 function scheduleMermaidRender() {
   if (_mermaidReady) {
-    // Already loaded — run immediately after current render cycle
-    setTimeout(() => window.mermaid && window.mermaid.run(), 0);
+    // Already loaded — run on unprocessed diagrams only to avoid re-rendering
+    setTimeout(() => {
+      const pending = document.querySelectorAll('.mermaid:not([data-processed])');
+      if (pending.length && window.mermaid) window.mermaid.run({ nodes: Array.from(pending) });
+    }, 0);
     return;
   }
   if (_mermaidLoading) return;
   _mermaidLoading = true;
-  // Mark pending diagrams as loading
-  document.querySelectorAll('.mermaid:not([data-processed])').forEach(el => {
-    el.dataset.mermaidSrc = el.textContent;
-    el.innerHTML = `<span class="mermaid-loading">Carregando diagrama…</span>`;
-  });
   const script = document.createElement('script');
   script.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js';
   script.onload = () => {
     _mermaidReady = true;
-    window.mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose' });
-    // Restore original content and render
-    document.querySelectorAll('.mermaid[data-mermaid-src]').forEach(el => {
-      el.textContent = el.dataset.mermaidSrc;
-      delete el.dataset.mermaidSrc;
-    });
-    window.mermaid.run();
+    // strict: blocks HTML/JS in diagram labels (safe for shared vaults)
+    window.mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'strict' });
+    // Render all unprocessed diagrams currently in the DOM (navigation-safe)
+    const pending = document.querySelectorAll('.mermaid:not([data-processed])');
+    if (pending.length) window.mermaid.run({ nodes: Array.from(pending) });
   };
   script.onerror = () => {
-    // Offline fallback: restore as code block
-    document.querySelectorAll('.mermaid[data-mermaid-src]').forEach(el => {
+    // Offline fallback: replace .mermaid divs with code blocks
+    document.querySelectorAll('.mermaid').forEach(el => {
       const pre = document.createElement('pre');
-      pre.innerHTML = `<code class="lang-mermaid">${escHtml(el.dataset.mermaidSrc)}</code>`;
+      pre.innerHTML = `<code class="lang-mermaid">${escHtml(el.textContent)}</code>`;
       el.replaceWith(pre);
     });
   };
