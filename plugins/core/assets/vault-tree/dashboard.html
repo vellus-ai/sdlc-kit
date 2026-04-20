@@ -102,14 +102,35 @@
     .col-progress .kanban-col-header { color: var(--warning); }
     .col-done .kanban-col-header { color: var(--success); }
     #kanban-empty { display: none; flex: 1; align-items: center; justify-content: center; flex-direction: column; gap: 0.5rem; color: var(--text-sec); padding: 2rem; text-align: center; }
-    /* BRANCH GRAPH */
-    #branch-graph-wrap { flex: 1; overflow-y: auto; padding: 1.25rem 1.5rem; }
-    .branch-lane { background: var(--white); border: 1px solid var(--border-light); border-radius: 10px; padding: 0.85rem 1.1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 1px 2px var(--shadow); }
-    .branch-name { font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace; font-size: 0.85rem; color: var(--text); font-weight: 500; flex: 1; }
-    .branch-bar-wrap { flex: 2; }
-    .branch-bar { height: 10px; border-radius: 5px; background: var(--accent); opacity: 0.85; min-width: 8px; }
-    .branch-count { font-size: 0.8rem; color: var(--text-sec); white-space: nowrap; }
-    .branch-pr-hint { font-size: 0.75rem; color: var(--text-sec); font-style: italic; white-space: nowrap; }
+    /* BRANCH TREE */
+    #branch-graph-wrap { flex: 1; overflow-y: auto; padding: 1.25rem 1.5rem; font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace; font-size: 0.82rem; }
+    .btree-root { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
+    .btree-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    .btree-dot.dot-merged { background: var(--success); }
+    .btree-dot.dot-open { background: var(--border); border: 2px solid var(--accent); }
+    .btree-root-label { font-weight: 700; color: var(--text); font-size: 0.88rem; }
+    .btree-group { margin-left: 12px; border-left: 2px solid var(--border-light); padding-left: 0; margin-bottom: 0.25rem; }
+    .btree-group-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0 0.3rem 1rem; color: var(--text-sec); font-size: 0.78rem; cursor: pointer; user-select: none; position: relative; }
+    .btree-group-header::before { content: ''; position: absolute; left: 0; top: 50%; width: 1rem; height: 0; border-top: 2px solid var(--border-light); }
+    .btree-group-header:hover { color: var(--text); }
+    .btree-group-toggle { font-size: 0.7rem; color: var(--text-sec); transition: transform 0.15s; }
+    .btree-group-toggle.open { transform: rotate(90deg); }
+    .btree-group-icon { opacity: 0.6; }
+    .btree-group-name { font-weight: 600; }
+    .btree-group-count { background: var(--bg-secondary); border-radius: 8px; padding: 1px 6px; font-size: 0.72rem; }
+    .btree-leaves { overflow: hidden; }
+    .btree-leaf { display: flex; align-items: center; gap: 0.55rem; padding: 0.28rem 0.5rem 0.28rem 1rem; margin-left: 12px; position: relative; cursor: default; border-radius: 5px; transition: background 0.12s; }
+    .btree-leaf::before { content: ''; position: absolute; left: -12px; top: 50%; width: 12px; height: 0; border-top: 2px solid var(--border-light); }
+    .btree-leaf:hover { background: var(--bg-secondary); }
+    .btree-leaf.status-merged { opacity: 0.55; }
+    .btree-leaf-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--border); border: 2px solid var(--accent); }
+    .btree-leaf-dot.s-in-progress { background: var(--accent); border-color: var(--accent); }
+    .btree-leaf-dot.s-merged { background: var(--success); border-color: var(--success); }
+    .btree-leaf-dot.s-closed, .btree-leaf-dot.s-abandoned { background: var(--danger); border-color: var(--danger); }
+    .btree-leaf-name { color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .btree-leaf-status { font-size: 0.72rem; color: var(--text-sec); white-space: nowrap; padding: 1px 5px; border-radius: 4px; background: var(--bg-secondary); }
+    .btree-leaf-tasks { font-size: 0.72rem; color: var(--accent); white-space: nowrap; }
+    .btree-leaf-pr { font-size: 0.72rem; color: var(--text-sec); font-style: italic; white-space: nowrap; }
     #graph-empty { display: none; flex: 1; align-items: center; justify-content: center; flex-direction: column; gap: 0.5rem; color: var(--text-sec); padding: 2rem; text-align: center; }
     /* EPICOS & MILESTONES */
     #tab-epicos { flex-direction: row; }
@@ -310,8 +331,8 @@
     <div id="tasks-view-graph" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
       <div id="branch-graph-wrap">
         <div id="graph-empty" style="display:flex;">
-          <p>No branches referenced in the tasks.</p>
-          <small>Add tasks with <code>@branch-name</code> to see the graph.</small>
+          <p>Nenhuma branch encontrada.</p>
+          <small>Use <code>/sdlc-kit:sync</code> para popular os dados de branches.</small>
         </div>
       </div>
     </div>
@@ -480,7 +501,7 @@ async function reconnectVault() {
    PLUGIN UPDATE CHECK
    ========================================================= */
 const PLUGIN_REPO = 'vellus-ai/sdlc-kit';
-const DASHBOARD_VERSION = '0.9.0';
+const DASHBOARD_VERSION = '0.10.0';
 
 async function readMarkerJson() {
   if (!rootHandle) return null;
@@ -1370,19 +1391,16 @@ function buildKanbanCard(task) {
 }
 
 /* =========================================================
-   BRANCH GRAPH
+   BRANCH TREE
    ========================================================= */
 
 async function readBranchDocs() {
-  // Reads 05-development/ for files with type: branch or type: worktree
-  // Returns array of { branch, status, pr, ciStatus }
   if (!rootHandle) return [];
   const results = [];
   try {
     const devHandle = await rootHandle.getDirectoryHandle('05-development', { create: false });
     for await (const [name, entry] of devHandle.entries()) {
-      if (entry.kind !== 'file' || !name.endsWith('.md')) continue;
-      if (name.startsWith('_')) continue;
+      if (entry.kind !== 'file' || !name.endsWith('.md') || name.startsWith('_')) continue;
       const file = await entry.getFile();
       const text = await file.text();
       const fm = parseFrontmatter(text);
@@ -1390,12 +1408,14 @@ async function readBranchDocs() {
       const docType = fm.frontmatter.type;
       if (docType !== 'branch' && docType !== 'worktree') continue;
       const slug = fm.frontmatter.slug || name.replace(/\.md$/, '');
-      const status = fm.frontmatter.status || 'open';
-      const pr = fm.frontmatter.pr || '';
-      const ciStatus = fm.frontmatter.ci_status || '';
-      results.push({ branch: slug, status, pr, ciStatus, fromDoc: true });
+      results.push({
+        branch: slug,
+        status: fm.frontmatter.status || 'open',
+        pr: fm.frontmatter.pr || '',
+        ciStatus: fm.frontmatter.ci_status || '',
+      });
     }
-  } catch (_) { /* 05-development doesn't exist or not accessible */ }
+  } catch (_) { /* 05-development absent or inaccessible */ }
   return results;
 }
 
@@ -1403,81 +1423,154 @@ async function renderBranchGraph(tasks) {
   const wrap = document.getElementById('branch-graph-wrap');
   const graphEmpty = document.getElementById('graph-empty');
 
-  // Remove existing lanes (but keep graph-empty)
-  Array.from(wrap.children).forEach(el => {
-    if (el.id !== 'graph-empty') el.remove();
-  });
+  Array.from(wrap.children).forEach(el => { if (el.id !== 'graph-empty') el.remove(); });
 
-  // Source 1: @branch annotations in tasks
-  const taskBranchMap = {};
+  // Source 1: @branch task annotations  →  { branch: taskCount }
+  const taskCounts = {};
   for (const task of tasks) {
     if (!task.branch) continue;
-    if (!taskBranchMap[task.branch]) taskBranchMap[task.branch] = 0;
-    taskBranchMap[task.branch]++;
+    taskCounts[task.branch] = (taskCounts[task.branch] || 0) + 1;
   }
 
-  // Source 2: 05-development/ branch docs
-  const branchDocs = await readBranchDocs();
-  const docBranchMap = {};
-  for (const doc of branchDocs) {
-    docBranchMap[doc.branch] = doc;
-  }
+  // Source 2: 05-development/ branch/worktree docs  →  { branch: metadata }
+  const docs = await readBranchDocs();
+  const docMap = {};
+  for (const d of docs) docMap[d.branch] = d;
 
-  // Merge: docs provide metadata; task annotations add task count
-  const allBranches = new Set([...Object.keys(taskBranchMap), ...Object.keys(docBranchMap)]);
-
-  if (allBranches.size === 0) {
-    graphEmpty.style.display = 'flex';
-    return;
-  }
+  const allBranches = new Set([...Object.keys(taskCounts), ...Object.keys(docMap)]);
+  if (allBranches.size === 0) { graphEmpty.style.display = 'flex'; return; }
   graphEmpty.style.display = 'none';
 
-  const branches = Array.from(allBranches).sort();
-  const maxCount = Math.max(1, ...Object.values(taskBranchMap));
+  // Build 2-level prefix tree: groupPrefix → [ { branch, status, pr, ciStatus, tasks } ]
+  // A branch like "refac/seller-pos/1.1-foo" → group "refac/seller-pos", leaf "1.1-foo"
+  // A branch like "feat/auth" → group "feat", leaf "auth"
+  // A branch like "hotfix" (no slash) → group "(raiz)", leaf "hotfix"
+  const tree = {}; // { groupKey: { branches: [...], label: string } }
 
-  for (const branch of branches) {
-    const count = taskBranchMap[branch] || 0;
-    const doc = docBranchMap[branch];
-    const status = doc ? doc.status : '';
-
-    const lane = document.createElement('div');
-    lane.className = 'branch-lane';
-    if (status === 'merged') lane.style.opacity = '0.6';
-
-    const nameEl = document.createElement('div');
-    nameEl.className = 'branch-name';
-    nameEl.textContent = branch;
-
-    const barWrap = document.createElement('div');
-    barWrap.className = 'branch-bar-wrap';
-    const bar = document.createElement('div');
-    bar.className = 'branch-bar';
-    bar.style.width = Math.max(8, Math.round((count / maxCount) * 180)) + 'px';
-    barWrap.appendChild(bar);
-
-    const countEl = document.createElement('div');
-    countEl.className = 'branch-count';
-    if (count > 0) {
-      countEl.textContent = count + (count === 1 ? ' task' : ' tasks');
-    } else if (status) {
-      countEl.textContent = status;
-    }
-
-    const prHint = document.createElement('div');
-    prHint.className = 'branch-pr-hint';
-    if (doc && doc.pr) {
-      prHint.textContent = 'PR: ' + doc.pr;
-    } else if (doc && doc.ciStatus && doc.ciStatus !== 'unknown') {
-      prHint.textContent = 'CI: ' + doc.ciStatus;
+  for (const branch of Array.from(allBranches).sort()) {
+    const parts = branch.split('/');
+    let groupKey, leafName;
+    if (parts.length === 1) {
+      groupKey = '(raiz)';
+      leafName = parts[0];
+    } else if (parts.length === 2) {
+      groupKey = parts[0];
+      leafName = parts[1];
     } else {
-      prHint.textContent = 'Run /sdlc-kit:sync to update PR status';
+      // e.g. refac/seller-pos/1.1-foo → group = refac/seller-pos
+      groupKey = parts.slice(0, -1).join('/');
+      leafName = parts[parts.length - 1];
+    }
+    if (!tree[groupKey]) tree[groupKey] = { label: groupKey, branches: [] };
+    const doc = docMap[branch] || {};
+    tree[groupKey].branches.push({
+      full: branch,
+      leaf: leafName,
+      status: doc.status || '',
+      pr: doc.pr || '',
+      ciStatus: doc.ciStatus || '',
+      tasks: taskCounts[branch] || 0,
+    });
+  }
+
+  // Render root node (main)
+  const rootEl = document.createElement('div');
+  rootEl.className = 'btree-root';
+  const rootDot = document.createElement('div');
+  rootDot.className = 'btree-dot';
+  const rootLabel = document.createElement('span');
+  rootLabel.className = 'btree-root-label';
+  rootLabel.textContent = 'main';
+  rootEl.appendChild(rootDot);
+  rootEl.appendChild(rootLabel);
+  wrap.insertBefore(rootEl, graphEmpty);
+
+  // Render each group
+  for (const [groupKey, group] of Object.entries(tree).sort(([a], [b]) => a.localeCompare(b))) {
+    const groupWrap = document.createElement('div');
+    groupWrap.className = 'btree-group';
+
+    const header = document.createElement('div');
+    header.className = 'btree-group-header';
+
+    const toggle = document.createElement('span');
+    toggle.className = 'btree-group-toggle open';
+    toggle.textContent = '▶';
+
+    const icon = document.createElement('span');
+    icon.className = 'btree-group-icon';
+    icon.textContent = '⎇';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'btree-group-name';
+    nameSpan.textContent = group.label === '(raiz)' ? '(branches diretas)' : group.label;
+
+    const countBadge = document.createElement('span');
+    countBadge.className = 'btree-group-count';
+    countBadge.textContent = group.branches.length;
+
+    header.appendChild(toggle);
+    header.appendChild(icon);
+    header.appendChild(nameSpan);
+    header.appendChild(countBadge);
+
+    const leavesWrap = document.createElement('div');
+    leavesWrap.className = 'btree-leaves';
+
+    for (const br of group.branches) {
+      const leaf = document.createElement('div');
+      const statusClass = br.status ? `status-${br.status}` : '';
+      leaf.className = `btree-leaf ${statusClass}`.trim();
+
+      const dot = document.createElement('div');
+      const dotStatus = br.status === 'in-progress' ? 's-in-progress'
+        : br.status === 'merged' ? 's-merged'
+        : (br.status === 'closed' || br.status === 'abandoned') ? 's-closed'
+        : '';
+      dot.className = `btree-leaf-dot ${dotStatus}`.trim();
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'btree-leaf-name';
+      nameEl.textContent = br.leaf;
+      nameEl.title = br.full;
+
+      leaf.appendChild(dot);
+      leaf.appendChild(nameEl);
+
+      if (br.status && br.status !== 'open') {
+        const statusBadge = document.createElement('span');
+        statusBadge.className = 'btree-leaf-status';
+        statusBadge.textContent = br.status;
+        leaf.appendChild(statusBadge);
+      }
+
+      if (br.tasks > 0) {
+        const tasksBadge = document.createElement('span');
+        tasksBadge.className = 'btree-leaf-tasks';
+        tasksBadge.textContent = br.tasks + (br.tasks === 1 ? ' task' : ' tasks');
+        leaf.appendChild(tasksBadge);
+      }
+
+      if (br.pr) {
+        const prEl = document.createElement('span');
+        prEl.className = 'btree-leaf-pr';
+        prEl.textContent = 'PR: ' + br.pr;
+        leaf.appendChild(prEl);
+      }
+
+      leavesWrap.appendChild(leaf);
     }
 
-    lane.appendChild(nameEl);
-    lane.appendChild(barWrap);
-    lane.appendChild(countEl);
-    lane.appendChild(prHint);
-    wrap.insertBefore(lane, graphEmpty);
+    // Toggle expand/collapse
+    header.addEventListener('click', () => {
+      const isOpen = leavesWrap.style.display !== 'none';
+      leavesWrap.style.display = isOpen ? 'none' : '';
+      toggle.classList.toggle('open', !isOpen);
+    });
+
+    groupWrap.appendChild(header);
+    groupWrap.appendChild(leavesWrap);
+    wrap.insertBefore(groupWrap, graphEmpty);
   }
 }
 
