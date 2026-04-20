@@ -1,6 +1,6 @@
 {
   "name": "sdlc-kit",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "description": "Spec-Driven Development + DDD for Claude Code. Since v0.4.0 split into two composable plugins: sdlc-kit (core — 11 daily-PR-loop skills) and sdlc-kit-extended (11 optional governance, architecture and post-delivery skills). See marketplace.json for installable plugins.",
   "author": {
     "name": "Vellus",

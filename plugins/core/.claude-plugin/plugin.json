@@ -1,6 +1,6 @@
 {
   "name": "sdlc-kit",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "description": "Spec-Driven Development vault for Claude Code — core (11 skills for daily delivery: init, sync, status, dash, prd, adr, spec, task, worktree, review, retro).",
   "author": {
     "name": "Vellus",
