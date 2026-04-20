@@ -31,3 +31,10 @@ Plugin standalone para criar e manter um vault de Spec-Driven Development dentro
 
 - Localização: `.worktrees/<branch-slug>`
 - Ignorado pelo git (ver `.gitignore`)
+
+---
+
+## SDLC Vault
+
+Leia [[.sdlc/_INDEX]] antes de iniciar qualquer tarefa.
+Doutrina do vault: `.sdlc/CLAUDE.md`
