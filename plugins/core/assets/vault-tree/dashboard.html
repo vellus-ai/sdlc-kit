@@ -1133,7 +1133,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
  *         - [-] In-progress task   (convention: - [-] means in-progress)
  */
 function parseTaskLine(line) {
-  const doneMatch = line.match(/^- \[([x\-])\] (.*)/i);
+  const doneMatch = line.match(/^- \[([x\- ])\] (.*)/i);
   if (!doneMatch) return null;
   const checkChar = doneMatch[1].toLowerCase();
   const rest = doneMatch[2];
