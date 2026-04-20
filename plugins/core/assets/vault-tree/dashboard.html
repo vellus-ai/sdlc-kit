@@ -1020,6 +1020,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     switchTab(btn.dataset.tab);
     if (btn.dataset.tab === 'tab-tasks' && rootHandle) renderKanban();
     if (btn.dataset.tab === 'tab-epicos' && rootHandle) renderEpicosTab();
+    if (btn.dataset.tab === 'tab-dominio' && rootHandle) renderDomainTab();
   });
 });
 
@@ -1630,7 +1631,7 @@ async function buildDomainPanel(ctxName, key) {
     return panel;
   }
 
-  const { body } = parseFrontmatter(text);
+  const { body = '' } = parseFrontmatter(text);
 
   if (key === 'lang')   renderLanguagePanel(body, panel);
   else if (key === 'events') renderEventsPanel(body, panel);
@@ -1646,19 +1647,9 @@ function wireWikilinks(el) {
   });
 }
 
-// Render inline text: wikilinks + bold, safe for card fields
-function inlineRender(text) {
-  return text
-    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, (_, t, l) =>
-      `<button class="wikilink" data-target="${escAttr(t)}">${escHtml(l)}</button>`)
-    .replace(/\[\[([^\]]+)\]\]/g, (_, t) =>
-      `<button class="wikilink" data-target="${escAttr(t)}">${escHtml(t)}</button>`)
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>');
-}
 
 function renderLanguagePanel(body, panel) {
-  const sections = body.split(/^### /m).filter(s => s.trim());
+  const sections = body.split(/^### /m).slice(1).filter(s => s.trim());
   if (!sections.length) {
     panel.innerHTML = '<p style="color:var(--text-sec)">No terms defined yet.</p>';
     return;
@@ -1682,7 +1673,7 @@ function renderLanguagePanel(body, panel) {
 }
 
 function renderEventsPanel(body, panel) {
-  const sections = body.split(/^### /m).filter(s => s.trim());
+  const sections = body.split(/^### /m).slice(1).filter(s => s.trim());
   if (!sections.length) {
     panel.innerHTML = '<p style="color:var(--text-sec)">No events defined yet.</p>';
     return;
