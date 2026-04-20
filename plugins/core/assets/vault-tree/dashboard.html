@@ -125,6 +125,36 @@
     .epic-card .meta, .milestone-card .meta { font-size: 0.83rem; color: var(--text-sec); display: flex; flex-wrap: wrap; gap: 0.75rem; }
     .progress-bar-wrap { background: var(--bg-secondary); border-radius: 4px; height: 6px; margin-top: 0.6rem; overflow: hidden; }
     .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; }
+    /* DOMAIN TAB */
+    #tab-dominio { flex-direction: row; }
+    #domain-sidebar { width: 220px; min-width: 160px; background: var(--white); border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; }
+    #domain-sidebar-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.8rem; font-weight: 700; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.05em; }
+    .domain-ctx-item { padding: 10px 1rem; font-size: 0.87rem; color: var(--text-sec); cursor: pointer; border-left: 2px solid transparent; transition: all 0.15s ease; }
+    .domain-ctx-item:hover { background: var(--bg-secondary); color: var(--text); }
+    .domain-ctx-item.active { background: var(--accent-soft); color: var(--text); border-left-color: var(--accent); font-weight: 600; }
+    #domain-content { flex: 1; overflow-y: auto; padding: 2rem; background: var(--bg); }
+    #domain-inner { max-width: 800px; margin: 0 auto; }
+    .domain-subtab-bar { display: flex; gap: 0.25rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+    .domain-subtab { background: none; border: none; border-bottom: 2px solid transparent; padding: 8px 14px; font-size: 0.85rem; font-weight: 500; color: var(--text-muted); cursor: pointer; margin-bottom: -1px; transition: color 0.15s; }
+    .domain-subtab:hover { color: var(--text); }
+    .domain-subtab.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+    .domain-term-card { background: var(--white); border: 1px solid var(--border-light); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; box-shadow: 0 1px 2px var(--shadow); }
+    .domain-term-card h4 { font-size: 0.97rem; color: var(--text); font-weight: 700; margin-bottom: 0.5rem; font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace; }
+    .domain-term-card .def { font-size: 0.88rem; color: var(--text); line-height: 1.55; margin-bottom: 0.35rem; }
+    .domain-term-card .syn { font-size: 0.82rem; color: var(--danger); }
+    .domain-term-card .ex { font-size: 0.82rem; color: var(--text-sec); font-style: italic; margin-top: 0.35rem; }
+    .domain-event-card { background: var(--white); border: 1px solid var(--border-light); border-left: 3px solid var(--accent); border-radius: 8px; padding: 0.9rem 1.1rem; margin-bottom: 0.65rem; box-shadow: 0 1px 2px var(--shadow); }
+    .domain-event-card .evt-name { font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace; font-size: 0.88rem; font-weight: 700; color: var(--accent-hover); margin-bottom: 0.4rem; }
+    .domain-event-card .evt-desc { font-size: 0.85rem; color: var(--text); line-height: 1.5; }
+    .domain-event-card .evt-meta { font-size: 0.8rem; color: var(--text-sec); margin-top: 0.35rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+    .domain-md-wrap { font-size: 0.88rem; line-height: 1.7; }
+    .domain-md-wrap h2 { font-size: 1rem; font-weight: 700; color: var(--text); margin: 1.25rem 0 0.5rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.25rem; }
+    .domain-md-wrap h3 { font-size: 0.93rem; font-weight: 600; color: var(--text); margin: 1rem 0 0.4rem; }
+    .domain-md-wrap table { border-collapse: collapse; width: 100%; margin: 0.5rem 0 1rem; font-size: 0.83rem; }
+    .domain-md-wrap th { background: var(--bg-secondary); color: var(--text-sec); font-weight: 600; text-align: left; padding: 6px 10px; border: 1px solid var(--border-light); }
+    .domain-md-wrap td { padding: 5px 10px; border: 1px solid var(--border-light); color: var(--text); vertical-align: top; }
+    .domain-md-wrap code { font-family: 'JetBrains Mono', Consolas, monospace; background: var(--bg-secondary); padding: 1px 5px; border-radius: 3px; font-size: 0.82em; }
+    .domain-md-wrap li { margin-bottom: 0.2rem; }
     /* WELCOME SCREEN */
     #welcome { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1.2rem; padding: 2rem; text-align: center; }
     #welcome h2 { font-size: 1.5rem; color: var(--text); font-weight: 600; letter-spacing: -0.02em; }
@@ -298,9 +328,14 @@
   </div>
 
   <div id="tab-dominio" class="tab-panel">
-    <div class="placeholder">
-      <p>Glossary and domain model</p>
-      <small>Available in a future phase.</small>
+    <div id="domain-sidebar">
+      <div id="domain-sidebar-header">Bounded Contexts</div>
+      <div id="domain-context-list"></div>
+    </div>
+    <div id="domain-content">
+      <div id="domain-inner">
+        <p style="color:var(--text-sec)">Open a vault to view the domain model.</p>
+      </div>
     </div>
   </div>
 </main>
@@ -592,6 +627,7 @@ async function loadVault(handle) {
   // Pre-load delivery data
   await renderKanban();
   await renderEpicosTab();
+  await renderDomainTab();
 }
 
 /* =========================================================
@@ -1467,6 +1503,198 @@ function ragToClass(rag) {
     }
   }
 })();
+
+/* =========================================================
+   DOMAIN TAB
+   ========================================================= */
+async function renderDomainTab() {
+  const ctxList = document.getElementById('domain-context-list');
+  const inner = document.getElementById('domain-inner');
+  if (!rootHandle) {
+    inner.innerHTML = '<p style="color:var(--text-sec)">Open a vault to view the domain model.</p>';
+    return;
+  }
+  const contexts = await getDomainContexts();
+  ctxList.innerHTML = '';
+  if (contexts.length === 0) {
+    inner.innerHTML = '<p style="color:var(--text-sec);font-size:0.92rem;">No bounded contexts found. Run <code>/sdlc-kit:domain</code> to get started.</p>';
+    return;
+  }
+  contexts.forEach((ctx, i) => {
+    const item = document.createElement('div');
+    item.className = 'domain-ctx-item' + (i === 0 ? ' active' : '');
+    item.textContent = formatContextName(ctx);
+    item.dataset.ctx = ctx;
+    item.onclick = () => loadDomainContext(ctx);
+    ctxList.appendChild(item);
+  });
+  await loadDomainContext(contexts[0]);
+}
+
+async function getDomainContexts() {
+  try {
+    let archDir, domainDir;
+    // Support both canonical (02-architecture) and legacy vault layouts
+    for (const folder of ['02-architecture', '03-domain', '04-domain']) {
+      try { archDir = await rootHandle.getDirectoryHandle(folder); break; } catch (_) {}
+    }
+    if (!archDir) return [];
+    try { domainDir = await archDir.getDirectoryHandle('domain'); }
+    catch (_) { return []; }
+    const contexts = [];
+    for await (const [name, entry] of domainDir.entries()) {
+      if (entry.kind === 'directory' && !name.startsWith('_') && name !== 'contracts') {
+        contexts.push(name);
+      }
+    }
+    return contexts.sort();
+  } catch (_) { return []; }
+}
+
+function formatContextName(slug) {
+  return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+async function loadDomainContext(ctxName) {
+  document.querySelectorAll('.domain-ctx-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.ctx === ctxName);
+  });
+  const inner = document.getElementById('domain-inner');
+  inner.innerHTML = '';
+
+  const h2 = document.createElement('h2');
+  h2.style.cssText = 'font-size:1.2rem;margin-bottom:1.25rem;color:var(--text);font-weight:700;';
+  h2.textContent = formatContextName(ctxName);
+  inner.appendChild(h2);
+
+  // Sub-tab bar
+  const bar = document.createElement('div');
+  bar.className = 'domain-subtab-bar';
+  const subtabs = [
+    { key: 'lang',   label: 'Language'   },
+    { key: 'events', label: 'Events'     },
+    { key: 'aggs',   label: 'Aggregates' },
+    { key: 'ctxmap', label: 'Context Map'},
+  ];
+  subtabs.forEach(({ key, label }, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'domain-subtab' + (i === 0 ? ' active' : '');
+    btn.textContent = label;
+    btn.dataset.subtab = key;
+    bar.appendChild(btn);
+  });
+  inner.appendChild(bar);
+
+  const wrap = document.createElement('div');
+  wrap.id = 'domain-panel-wrap';
+  inner.appendChild(wrap);
+
+  // Lazy-load panels on tab click
+  let loaded = {};
+  const showPanel = async (key) => {
+    if (!loaded[key]) {
+      loaded[key] = await buildDomainPanel(ctxName, key);
+    }
+    wrap.innerHTML = '';
+    wrap.appendChild(loaded[key]);
+  };
+
+  bar.querySelectorAll('.domain-subtab').forEach(btn => {
+    btn.onclick = async () => {
+      bar.querySelectorAll('.domain-subtab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      await showPanel(btn.dataset.subtab);
+    };
+  });
+
+  await showPanel('lang');
+}
+
+async function buildDomainPanel(ctxName, key) {
+  const baseDir = ['02-architecture', 'domain', ctxName];
+  // Try both vault layouts
+  const altBaseDir = ['03-domain', ctxName];
+  const fileMap = {
+    lang:   'ubiquitous-language.md',
+    events: 'domain-events.md',
+    aggs:   'aggregates.md',
+    ctxmap: 'context-map.md',
+  };
+  let text = await readFileFromVault([...baseDir, fileMap[key]]);
+  if (!text) text = await readFileFromVault([...altBaseDir, fileMap[key]]);
+
+  const panel = document.createElement('div');
+
+  if (!text) {
+    panel.innerHTML = `<p style="color:var(--text-sec);font-size:0.9rem;">No ${fileMap[key]} found for this context.</p>`;
+    return panel;
+  }
+
+  const { body } = parseFrontmatter(text);
+
+  if (key === 'lang')   renderLanguagePanel(body, panel);
+  else if (key === 'events') renderEventsPanel(body, panel);
+  else renderMarkdownPanel(body, panel);
+
+  return panel;
+}
+
+function renderLanguagePanel(body, panel) {
+  // Parse `### TermName` blocks
+  const sections = body.split(/^### /m).filter(s => s.trim());
+  if (!sections.length) {
+    panel.innerHTML = '<p style="color:var(--text-sec)">No terms defined yet.</p>';
+    return;
+  }
+  sections.forEach(sec => {
+    const lines = sec.split('\n');
+    const term = lines[0].trim();
+    const rest = lines.slice(1).join('\n');
+    const def = (rest.match(/\*\*Defini[çc][ãa]o:\*\*\s*(.+)/i) || [])[1] || '';
+    const syn = (rest.match(/\*\*Sin[ôo]nimos proibidos:\*\*\s*(.+)/i) || [])[1] || '';
+    const ex  = (rest.match(/\*\*Exemplo:\*\*\s*(.+)/i) || [])[1] || '';
+    const card = document.createElement('div');
+    card.className = 'domain-term-card';
+    card.innerHTML = `<h4>${escHtml(term)}</h4>` +
+      (def ? `<div class="def">${escHtml(def)}</div>` : '') +
+      (syn ? `<div class="syn">⊘ ${escHtml(syn)}</div>` : '') +
+      (ex  ? `<div class="ex">💬 ${escHtml(ex)}</div>` : '');
+    panel.appendChild(card);
+  });
+}
+
+function renderEventsPanel(body, panel) {
+  // Parse ``` ### `event.name` (v1) ``` blocks
+  const sections = body.split(/^### /m).filter(s => s.trim());
+  if (!sections.length) {
+    panel.innerHTML = '<p style="color:var(--text-sec)">No events defined yet.</p>';
+    return;
+  }
+  sections.forEach(sec => {
+    const lines = sec.split('\n');
+    const name = lines[0].replace(/`/g, '').trim();
+    const rest = lines.slice(1).join('\n');
+    const desc = (rest.match(/\*\*Descri[çc][ãa]o:\*\*\s*(.+)/i) || [])[1] || '';
+    const prod = (rest.match(/\*\*Produtor:\*\*\s*(.+)/i) || [])[1] || '';
+    const cons = (rest.match(/\*\*Consumidores:\*\*\s*(.+)/i) || [])[1] || '';
+    const card = document.createElement('div');
+    card.className = 'domain-event-card';
+    card.innerHTML = `<div class="evt-name">${escHtml(name)}</div>` +
+      (desc ? `<div class="evt-desc">${escHtml(desc)}</div>` : '') +
+      ((prod || cons) ? `<div class="evt-meta">` +
+        (prod ? `<span>↑ ${escHtml(prod)}</span>` : '') +
+        (cons ? `<span>↓ ${escHtml(cons)}</span>` : '') +
+      `</div>` : '');
+    panel.appendChild(card);
+  });
+}
+
+function renderMarkdownPanel(body, panel) {
+  const div = document.createElement('div');
+  div.className = 'domain-md-wrap';
+  div.innerHTML = parseMarkdown(body);
+  panel.appendChild(div);
+}
 </script>
 </body>
 </html>
