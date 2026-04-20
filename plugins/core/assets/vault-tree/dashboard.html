@@ -1639,8 +1639,25 @@ async function buildDomainPanel(ctxName, key) {
   return panel;
 }
 
+// Wire wikilink buttons inside any element after innerHTML assignment
+function wireWikilinks(el) {
+  el.querySelectorAll('.wikilink').forEach(btn => {
+    btn.onclick = () => navigateWikilink(btn.dataset.target);
+  });
+}
+
+// Render inline text: wikilinks + bold, safe for card fields
+function inlineRender(text) {
+  return text
+    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, (_, t, l) =>
+      `<button class="wikilink" data-target="${escAttr(t)}">${escHtml(l)}</button>`)
+    .replace(/\[\[([^\]]+)\]\]/g, (_, t) =>
+      `<button class="wikilink" data-target="${escAttr(t)}">${escHtml(t)}</button>`)
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+}
+
 function renderLanguagePanel(body, panel) {
-  // Parse `### TermName` blocks
   const sections = body.split(/^### /m).filter(s => s.trim());
   if (!sections.length) {
     panel.innerHTML = '<p style="color:var(--text-sec)">No terms defined yet.</p>';
@@ -1656,15 +1673,15 @@ function renderLanguagePanel(body, panel) {
     const card = document.createElement('div');
     card.className = 'domain-term-card';
     card.innerHTML = `<h4>${escHtml(term)}</h4>` +
-      (def ? `<div class="def">${escHtml(def)}</div>` : '') +
-      (syn ? `<div class="syn">⊘ ${escHtml(syn)}</div>` : '') +
-      (ex  ? `<div class="ex">💬 ${escHtml(ex)}</div>` : '');
+      (def ? `<div class="def">${inlineRender(def)}</div>` : '') +
+      (syn ? `<div class="syn">⊘ ${inlineRender(syn)}</div>` : '') +
+      (ex  ? `<div class="ex">💬 ${inlineRender(ex)}</div>` : '');
+    wireWikilinks(card);
     panel.appendChild(card);
   });
 }
 
 function renderEventsPanel(body, panel) {
-  // Parse ``` ### `event.name` (v1) ``` blocks
   const sections = body.split(/^### /m).filter(s => s.trim());
   if (!sections.length) {
     panel.innerHTML = '<p style="color:var(--text-sec)">No events defined yet.</p>';
@@ -1680,11 +1697,12 @@ function renderEventsPanel(body, panel) {
     const card = document.createElement('div');
     card.className = 'domain-event-card';
     card.innerHTML = `<div class="evt-name">${escHtml(name)}</div>` +
-      (desc ? `<div class="evt-desc">${escHtml(desc)}</div>` : '') +
+      (desc ? `<div class="evt-desc">${inlineRender(desc)}</div>` : '') +
       ((prod || cons) ? `<div class="evt-meta">` +
-        (prod ? `<span>↑ ${escHtml(prod)}</span>` : '') +
-        (cons ? `<span>↓ ${escHtml(cons)}</span>` : '') +
+        (prod ? `<span>↑ ${inlineRender(prod)}</span>` : '') +
+        (cons ? `<span>↓ ${inlineRender(cons)}</span>` : '') +
       `</div>` : '');
+    wireWikilinks(card);
     panel.appendChild(card);
   });
 }
@@ -1693,6 +1711,7 @@ function renderMarkdownPanel(body, panel) {
   const div = document.createElement('div');
   div.className = 'domain-md-wrap';
   div.innerHTML = parseMarkdown(body);
+  wireWikilinks(div);
   panel.appendChild(div);
 }
 </script>
