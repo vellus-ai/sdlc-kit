@@ -1175,6 +1175,65 @@ async function readFileFromVault(pathParts) {
 }
 
 /* =========================================================
+   VAULT SCAN HELPERS
+   ========================================================= */
+
+async function listDirEntries(dirHandle) {
+  const entries = [];
+  for await (const [name, handle] of dirHandle.entries()) {
+    entries.push({ name, handle });
+  }
+  return entries;
+}
+
+async function aggregateSpecTasks() {
+  // Fallback: aggregate task lines from 04-specs/*/tasks.md
+  if (!rootHandle) return null;
+  try {
+    const specsDir = await rootHandle.getDirectoryHandle('04-specs');
+    const entries = await listDirEntries(specsDir);
+    const lines = [];
+    for (const { name, handle } of entries) {
+      if (handle.kind !== 'directory') continue;
+      try {
+        const fh = await handle.getFileHandle('tasks.md');
+        const text = await (await fh.getFile()).text();
+        text.split('\n').forEach(l => { if (/^- \[/.test(l)) lines.push(l); });
+      } catch (_) {}
+    }
+    return lines.length ? lines.join('\n') : null;
+  } catch (_) { return null; }
+}
+
+async function readEpicFiles() {
+  // Fallback: read individual epic files from 01-planning/epic/*.md
+  if (!rootHandle) return [];
+  try {
+    const epicDir = await (await rootHandle.getDirectoryHandle('01-planning'))
+      .getDirectoryHandle('epic');
+    const entries = await listDirEntries(epicDir);
+    const epics = [];
+    for (const { name, handle } of entries) {
+      if (handle.kind !== 'file' || !name.endsWith('.md') || name.startsWith('_')) continue;
+      try {
+        const text = await (await handle.getFile()).text();
+        const { frontmatter, body } = parseFrontmatter(text);
+        if (!frontmatter.title) continue;
+        epics.push({
+          name: frontmatter.title,
+          milestone: frontmatter.milestone || '',
+          description: (body.match(/^>?\s*(.+)/m) || [])[1] || '',
+          created: frontmatter.created || '',
+          progress: '0',
+          status: frontmatter.status || '',
+        });
+      } catch (_) {}
+    }
+    return epics;
+  } catch (_) { return []; }
+}
+
+/* =========================================================
    KANBAN BOARD
    ========================================================= */
 async function renderKanban() {
@@ -1191,7 +1250,9 @@ async function renderKanban() {
 
   if (!rootHandle) { hint.textContent = 'Open a vault to view the tasks.'; return; }
 
-  const text = await readFileFromVault(['03-development', 'TASKS.md']);
+  let text = await readFileFromVault(['03-development', 'TASKS.md']);
+  const taskSource = text ? '03-development/TASKS.md' : '04-specs/*/tasks.md (aggregated)';
+  if (!text) text = await aggregateSpecTasks();
   if (!text) {
     hint.textContent = 'TASKS.md not found. Run /sdlc-kit:task to create it.';
     board.style.display = 'none';
@@ -1199,7 +1260,7 @@ async function renderKanban() {
     return;
   }
 
-  hint.textContent = '03-development/TASKS.md';
+  hint.textContent = taskSource;
   const tasks = text.split('\n').map(parseTaskLine).filter(Boolean);
 
   if (tasks.length === 0) {
@@ -1371,14 +1432,13 @@ async function renderEpics() {
     return;
   }
 
-  const text = await readFileFromVault(['03-development', 'EPICS.md']);
-  if (!text) {
-    container.innerHTML = '<p style="color:var(--text-sec); font-size:0.92rem;">No epics yet. Run <code>/sdlc-kit:epic</code> to get started.</p>';
-    return;
+  const epicText = await readFileFromVault(['03-development', 'EPICS.md']);
+  let epics = [];
+  if (epicText) {
+    const { body } = parseFrontmatter(epicText);
+    epics = parseEpicSections(body);
   }
-
-  const { frontmatter, body } = parseFrontmatter(text);
-  const epics = parseEpicSections(body);
+  if (epics.length === 0) epics = await readEpicFiles();
 
   if (epics.length === 0) {
     container.innerHTML = '<p style="color:var(--text-sec); font-size:0.92rem;">No epics yet. Run <code>/sdlc-kit:epic</code> to get started.</p>';
