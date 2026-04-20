@@ -480,6 +480,7 @@ async function reconnectVault() {
    PLUGIN UPDATE CHECK
    ========================================================= */
 const PLUGIN_REPO = 'vellus-ai/sdlc-kit';
+const DASHBOARD_VERSION = '0.6.0';
 
 async function readMarkerJson() {
   if (!rootHandle) return null;
@@ -527,8 +528,8 @@ function copyCmd(text, btn) {
   });
 }
 
-function renderUpdateModal(marker, latest) {
-  const current = marker ? marker.version : null;
+function renderUpdateModal(latest) {
+  const current = DASHBOARD_VERSION;
   const title = document.getElementById('update-modal-title');
   const body = document.getElementById('update-modal-body');
   const btn = document.getElementById('btn-update');
@@ -544,7 +545,7 @@ function renderUpdateModal(marker, latest) {
     return;
   }
 
-  const hasUpdate = current ? semverGt(latest, current) : false;
+  const hasUpdate = semverGt(latest, current);
   btn.classList.toggle('has-update', hasUpdate);
 
   const scriptBtn = document.getElementById('btn-generate-script');
@@ -590,7 +591,37 @@ async function generateUpdateScript() {
   const repoName = PLUGIN_REPO.split('/')[1];
   const cmdCore = `claude plugin install ${repoName}@${repoName}`;
   const cmdExt  = `claude plugin install ${repoName}-extended@${repoName}`;
-  const scriptContent = `@echo off\r\necho Atualizando ${repoName}...\r\n${cmdCore}\r\n${cmdExt}\r\necho.\r\necho Atualizado! Reabra o dashboard para ver a nova versao.\r\npause\r\n`;
+
+  // Derive Windows vault path from current page URL
+  // file:///C:/workspace/travessias/.sdlc/dashboard.html -> C:\workspace\travessias\.sdlc
+  const rawPath = decodeURIComponent(window.location.pathname)
+    .replace(/^\//, '').replace(/\//g, '\\');
+  const vaultWinPath = rawPath.substring(0, rawPath.lastIndexOf('\\'));
+  const appData = '%USERPROFILE%\\.claude';
+
+  const ps = [
+    `$plugins = Get-Content '${appData}\\plugins\\installed_plugins.json' | ConvertFrom-Json`,
+    `$entry = $plugins.plugins.'${repoName}@${repoName}'[0]`,
+    `$src = Join-Path $entry.installPath 'assets\\vault-tree\\dashboard.html'`,
+    `$dst = '${vaultWinPath}\\dashboard.html'`,
+    `if (Test-Path $src) { Copy-Item $src $dst -Force; Write-Host "dashboard.html atualizado em $dst" } else { Write-Host "AVISO: nao encontrou $src" }`,
+  ].join('; ');
+
+  const lines = [
+    '@echo off',
+    `echo Atualizando plugin ${repoName}...`,
+    cmdCore,
+    cmdExt,
+    'echo.',
+    'echo Copiando dashboard atualizado para o vault...',
+    `powershell -NoProfile -Command "${ps.replace(/"/g, '\\"')}"`,
+    'echo.',
+    'echo Pronto! Recarregue o dashboard.html no browser.',
+    'pause',
+    '',
+  ];
+  const scriptContent = lines.join('\r\n');
+
   const btn = document.getElementById('btn-generate-script');
   try {
     const fileHandle = await rootHandle.getFileHandle('_sdlc-update.bat', { create: true });
@@ -615,11 +646,11 @@ function cmdBlock(cmd) {
 
 async function checkPluginUpdate(showModal = true) {
   if (showModal) document.getElementById('update-overlay').classList.add('open');
-  const [marker, latest] = await Promise.all([readMarkerJson(), fetchLatestRelease()]);
-  if (showModal) renderUpdateModal(marker, latest);
+  const latest = await fetchLatestRelease();
+  if (showModal) renderUpdateModal(latest);
   // Update badge silently
   const btn = document.getElementById('btn-update');
-  if (marker && latest && semverGt(latest, marker.version)) {
+  if (latest && semverGt(latest, DASHBOARD_VERSION)) {
     btn.classList.add('has-update');
     btn.title = `Atualização disponível: v${latest}`;
   }
