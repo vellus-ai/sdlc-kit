@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
+import shutil
 import sqlite3
 import sys
 from dataclasses import dataclass, field
@@ -77,6 +78,10 @@ REQUIRED_FIELDS_BY_TYPE: dict[str, set[str]] = {
     "design-token":     {"type", "title", "status", "slug"},
     "design-component": {"type", "title", "status", "slug"},
     "design-pattern":   {"type", "title", "status", "slug"},
+    "ux-criteria":      {"type", "title", "status"},
+    "user-flows":       {"type", "title", "status"},
+    "wireframe":        {"type", "title", "status", "slug"},
+    "design-validation": {"type", "title", "status"},
     "worktree":  {"type", "title", "status"},
     "branch":    {"type", "title", "slug"},
 }
@@ -797,6 +802,32 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
+def sync_managed_assets(vault_root: Path, plugin_root: Path, *, dry_run: bool) -> list[str]:
+    """Copy static assets from the plugin's assets/vault-tree/ into the vault root.
+
+    Currently manages: dashboard.html
+    Returns list of paths that were copied (empty on dry-run or if up-to-date).
+    """
+    assets_src = plugin_root / "plugins" / "core" / "assets" / "vault-tree"
+    managed: list[tuple[Path, Path]] = [
+        (assets_src / "dashboard.html", vault_root / "dashboard.html"),
+    ]
+    copied: list[str] = []
+    for src, dst in managed:
+        if not src.exists():
+            continue
+        needs_update = (
+            not dst.exists()
+            or src.stat().st_size != dst.stat().st_size
+            or src.read_bytes() != dst.read_bytes()
+        )
+        if needs_update:
+            if not dry_run:
+                shutil.copy2(src, dst)
+            copied.append(str(dst.relative_to(vault_root)).replace("\\", "/"))
+    return copied
+
+
 def main() -> None:
     args = parse_args()
     report = Report()
@@ -850,6 +881,15 @@ def main() -> None:
         regenerate_index(vault_root, notes, report.anomalies, dry_run=args.dry_run, report=report, locale=locale)
     except Exception as exc:
         die(report, f"INDEX regeneration failed: {exc}", code=2)
+
+    # --- 6. Sync managed assets (dashboard.html → vault root)
+    try:
+        copied = sync_managed_assets(vault_root, plugin_root, dry_run=args.dry_run)
+        if copied:
+            report.anomalies.append({"kind": "info", "message": f"assets synced: {', '.join(copied)}"})
+    except Exception as exc:
+        # Non-fatal: asset sync failure should not block vault indexing
+        print(f"warning: asset sync failed: {exc}", file=sys.stderr)
 
     report.status = "dry-run" if args.dry_run else "ok"
     print(json.dumps(report.as_dict(), ensure_ascii=False))

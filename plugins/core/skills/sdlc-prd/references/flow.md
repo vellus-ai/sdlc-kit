@@ -60,6 +60,34 @@ python "...prd.py" --vault-root "<vault>" --action transition \
 
 No-op if already at target status (idempotent).
 
+### Frontend UX gate detection
+
+After the interview, check whether the PRD has a user-facing (UI/frontend) scope:
+scan §4 Scope and §2 Problem for keywords like: UI, interface, dashboard, screen,
+page, form, app, frontend, web, mobile, design.
+
+If frontend scope is detected, append the following section **before** the References
+section of the PRD (using the Edit tool):
+
+```markdown
+## Suggested next steps — Frontend UX Gate Sequence
+
+This PRD includes a user-facing surface. Before authoring feature specs or TRDs,
+run the four UX gates in order:
+
+| Gate | Skill | Output |
+|------|-------|--------|
+| 1 — UX Research + Product Design | `/sdlc-kit:ux new <title>` | `ux-criteria.md`, `user-flows.md`, `wireframes/` |
+| 2 — Design System init | `/sdlc-kit:design-system` | tokens, components, patterns |
+| 3 — Design Validation | `/sdlc-kit:design-validation` | `design-validation.md` (gate report) |
+| 4 — Technical NFRs | `/sdlc-kit:trd new <title>` | `trd/<slug>.md` |
+
+Gate 3 (`design-validation`) is a **hard gate** — the TRD should not be authored
+until `design-validation.md` is in `status: approved`.
+```
+
+If no frontend scope is detected, skip this step silently.
+
 ### Sync
 
 After every scaffold or transition, invoke `/sdlc-kit:sync`.
