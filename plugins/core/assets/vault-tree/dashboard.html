@@ -731,16 +731,16 @@ async function loadVault(handle) {
 /* =========================================================
    FILE INDEX
    ========================================================= */
-async function buildFileIndex(dirHandle, prefix) {
+async function buildFileIndex(dirHandle, prefix = '') {
   for await (const [name, entry] of dirHandle.entries()) {
     if (entry.kind === 'directory') {
-      await buildFileIndex(entry, name);
+      const newPrefix = prefix ? `${prefix}/${name}` : name;
+      await buildFileIndex(entry, newPrefix);
     } else if (name.endsWith('.md')) {
       const stem = name.replace(/\.md$/, '');
       const path = prefix ? `${prefix}/${name}` : name;
-      const groupName = prefix || '';
+      const groupName = prefix;
       const normStem = normalizeStem(stem);
-      // Prefer non-template files: don't let a _templates entry overwrite a real file
       const isTemplate = groupName.toLowerCase().includes('_templates');
       if (!fileIndex[normStem] || !isTemplate) {
         fileIndex[normStem] = { handle: entry, path, groupName, stem, name };
@@ -756,49 +756,93 @@ function normalizeStem(s) {
 /* =========================================================
    SIDEBAR
    ========================================================= */
+function _makeFileEl(info, paddingLeft) {
+  const el = document.createElement('div');
+  el.className = 'tree-file';
+  if (paddingLeft) el.style.paddingLeft = paddingLeft;
+  el.textContent = info.stem;
+  el.dataset.path = info.path;
+  el.onclick = () => loadFile(info);
+  return el;
+}
+
+function _makeGroupLabel(text, extraStyle) {
+  const el = document.createElement('div');
+  el.className = 'tree-group-label collapsed';
+  el.textContent = text;
+  if (extraStyle) el.style.cssText += extraStyle;
+  return el;
+}
+
+function _makeFilesEl() {
+  const el = document.createElement('div');
+  el.className = 'tree-files collapsed';
+  return el;
+}
+
 async function renderSidebar(dirHandle) {
   const tree = document.getElementById('file-tree');
   tree.innerHTML = '';
 
-  // Group files by folder
-  const groups = {};
+  // Build two-level hierarchy: phase (01-planning) → sub (epic, c4, …) → files
+  const hierarchy = {};
   for (const [, info] of Object.entries(fileIndex)) {
-    const g = info.groupName || '(raiz)';
-    if (!groups[g]) groups[g] = [];
-    groups[g].push(info);
+    const parts = info.groupName ? info.groupName.split('/') : [];
+    const phase = parts[0] || '(raiz)';
+    const sub   = parts.slice(1).join('/') || '';
+    if (!hierarchy[phase]) hierarchy[phase] = {};
+    if (!hierarchy[phase][sub]) hierarchy[phase][sub] = [];
+    hierarchy[phase][sub].push(info);
   }
 
-  const sorted = Object.keys(groups).sort();
+  for (const phase of Object.keys(hierarchy).sort()) {
+    const subs = hierarchy[phase];
+    const phaseEl = document.createElement('div');
+    phaseEl.className = 'tree-group';
 
-  for (const gName of sorted) {
-    const files = groups[gName].sort((a, b) => a.name.localeCompare(b.name));
-    const groupEl = document.createElement('div');
-    groupEl.className = 'tree-group';
-
-    const label = document.createElement('div');
-    const autoCollapse = gName === '(raiz)' || gName.toLowerCase().endsWith('_templates');
-    label.className = 'tree-group-label' + (autoCollapse ? ' collapsed' : '');
-    label.textContent = gName;
-    label.onclick = () => {
-      label.classList.toggle('collapsed');
-      filesEl.classList.toggle('collapsed');
+    const phaseLabel = _makeGroupLabel(phase);
+    const phaseContent = _makeFilesEl();
+    phaseLabel.onclick = () => {
+      phaseLabel.classList.toggle('collapsed');
+      phaseContent.classList.toggle('collapsed');
     };
 
-    const filesEl = document.createElement('div');
-    filesEl.className = 'tree-files' + (autoCollapse ? ' collapsed' : '');
+    // Direct files under phase (sub === '') come first
+    const subKeys = Object.keys(subs).sort((a, b) => {
+      if (a === '') return -1; if (b === '') return 1;
+      return a.localeCompare(b);
+    });
 
-    for (const info of files) {
-      const fileEl = document.createElement('div');
-      fileEl.className = 'tree-file';
-      fileEl.textContent = info.stem;
-      fileEl.dataset.path = info.path;
-      fileEl.onclick = () => loadFile(info);
-      filesEl.appendChild(fileEl);
+    for (const sub of subKeys) {
+      const files = subs[sub].sort((a, b) => a.name.localeCompare(b.name));
+
+      if (!sub) {
+        files.forEach(f => phaseContent.appendChild(_makeFileEl(f, '1.25rem')));
+      } else {
+        // Skip _templates sub-groups entirely
+        if (sub.toLowerCase().includes('_templates')) continue;
+
+        const subEl = document.createElement('div');
+        subEl.className = 'tree-group';
+
+        const subLabel = _makeGroupLabel(sub.split('/').pop(), 'padding-left:1.5rem;font-size:0.82rem;');
+        const subFiles = _makeFilesEl();
+        subLabel.onclick = e => {
+          e.stopPropagation();
+          subLabel.classList.toggle('collapsed');
+          subFiles.classList.toggle('collapsed');
+        };
+        files.forEach(f => subFiles.appendChild(_makeFileEl(f, '2.5rem')));
+
+        subEl.appendChild(subLabel);
+        subEl.appendChild(subFiles);
+        phaseContent.appendChild(subEl);
+      }
     }
 
-    groupEl.appendChild(label);
-    groupEl.appendChild(filesEl);
-    tree.appendChild(groupEl);
+    phaseEl.appendChild(phaseLabel);
+    phaseEl.appendChild(phaseContent);
+    tree.appendChild(phaseEl);
   }
 }
 
