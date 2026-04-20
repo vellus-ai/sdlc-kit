@@ -628,15 +628,17 @@ async function generateUpdateScript() {
     const writable = await fileHandle.createWritable();
     await writable.write(scriptContent);
     await writable.close();
-    // Replace button with an anchor that opens the .bat file directly
     const batUrl = 'file:///' + vaultWinPath.replace(/\\/g, '/') + '/_sdlc-update.bat';
-    const anchor = document.createElement('a');
-    anchor.href = batUrl;
-    anchor.textContent = 'Executar script ↗';
-    anchor.className = btn.className;
-    anchor.style.cssText = btn.style.cssText;
-    anchor.title = batUrl;
-    btn.replaceWith(anchor);
+    btn.textContent = 'Executar script ↗';
+    btn.disabled = false;
+    btn.title = batUrl;
+    btn.onclick = () => {
+      const a = document.createElement('a');
+      a.href = batUrl;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
     const notice = document.getElementById('update-copy-notice');
     if (notice) notice.textContent = 'Script gerado — clique em Executar para rodar';
   } catch (e) {
