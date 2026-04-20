@@ -480,7 +480,7 @@ async function reconnectVault() {
    PLUGIN UPDATE CHECK
    ========================================================= */
 const PLUGIN_REPO = 'vellus-ai/sdlc-kit';
-const DASHBOARD_VERSION = '0.8.0';
+const DASHBOARD_VERSION = '0.9.0';
 
 async function readMarkerJson() {
   if (!rootHandle) return null;
@@ -1336,7 +1336,7 @@ async function renderKanban() {
   document.getElementById('count-progress').textContent = progressCount;
   document.getElementById('count-done').textContent = doneCount;
 
-  // Also render branch graph data
+  // Also render branch graph data (async — reads 05-development/ docs)
   renderBranchGraph(tasks);
 }
 
@@ -1372,7 +1372,34 @@ function buildKanbanCard(task) {
 /* =========================================================
    BRANCH GRAPH
    ========================================================= */
-function renderBranchGraph(tasks) {
+
+async function readBranchDocs() {
+  // Reads 05-development/ for files with type: branch or type: worktree
+  // Returns array of { branch, status, pr, ciStatus }
+  if (!rootHandle) return [];
+  const results = [];
+  try {
+    const devHandle = await rootHandle.getDirectoryHandle('05-development', { create: false });
+    for await (const [name, entry] of devHandle.entries()) {
+      if (entry.kind !== 'file' || !name.endsWith('.md')) continue;
+      if (name.startsWith('_')) continue;
+      const file = await entry.getFile();
+      const text = await file.text();
+      const fm = parseFrontmatter(text);
+      if (!fm || !fm.frontmatter) continue;
+      const docType = fm.frontmatter.type;
+      if (docType !== 'branch' && docType !== 'worktree') continue;
+      const slug = fm.frontmatter.slug || name.replace(/\.md$/, '');
+      const status = fm.frontmatter.status || 'open';
+      const pr = fm.frontmatter.pr || '';
+      const ciStatus = fm.frontmatter.ci_status || '';
+      results.push({ branch: slug, status, pr, ciStatus, fromDoc: true });
+    }
+  } catch (_) { /* 05-development doesn't exist or not accessible */ }
+  return results;
+}
+
+async function renderBranchGraph(tasks) {
   const wrap = document.getElementById('branch-graph-wrap');
   const graphEmpty = document.getElementById('graph-empty');
 
@@ -1381,27 +1408,41 @@ function renderBranchGraph(tasks) {
     if (el.id !== 'graph-empty') el.remove();
   });
 
-  // Aggregate by branch
-  const branchMap = {};
+  // Source 1: @branch annotations in tasks
+  const taskBranchMap = {};
   for (const task of tasks) {
     if (!task.branch) continue;
-    if (!branchMap[task.branch]) branchMap[task.branch] = 0;
-    branchMap[task.branch]++;
+    if (!taskBranchMap[task.branch]) taskBranchMap[task.branch] = 0;
+    taskBranchMap[task.branch]++;
   }
 
-  const branches = Object.keys(branchMap).sort();
-  if (branches.length === 0) {
+  // Source 2: 05-development/ branch docs
+  const branchDocs = await readBranchDocs();
+  const docBranchMap = {};
+  for (const doc of branchDocs) {
+    docBranchMap[doc.branch] = doc;
+  }
+
+  // Merge: docs provide metadata; task annotations add task count
+  const allBranches = new Set([...Object.keys(taskBranchMap), ...Object.keys(docBranchMap)]);
+
+  if (allBranches.size === 0) {
     graphEmpty.style.display = 'flex';
     return;
   }
   graphEmpty.style.display = 'none';
 
-  const maxCount = Math.max(...Object.values(branchMap));
+  const branches = Array.from(allBranches).sort();
+  const maxCount = Math.max(1, ...Object.values(taskBranchMap));
 
   for (const branch of branches) {
-    const count = branchMap[branch];
+    const count = taskBranchMap[branch] || 0;
+    const doc = docBranchMap[branch];
+    const status = doc ? doc.status : '';
+
     const lane = document.createElement('div');
     lane.className = 'branch-lane';
+    if (status === 'merged') lane.style.opacity = '0.6';
 
     const nameEl = document.createElement('div');
     nameEl.className = 'branch-name';
@@ -1416,11 +1457,21 @@ function renderBranchGraph(tasks) {
 
     const countEl = document.createElement('div');
     countEl.className = 'branch-count';
-    countEl.textContent = count + (count === 1 ? ' task' : ' tasks');
+    if (count > 0) {
+      countEl.textContent = count + (count === 1 ? ' task' : ' tasks');
+    } else if (status) {
+      countEl.textContent = status;
+    }
 
     const prHint = document.createElement('div');
     prHint.className = 'branch-pr-hint';
-    prHint.textContent = 'PR status available after sync';
+    if (doc && doc.pr) {
+      prHint.textContent = 'PR: ' + doc.pr;
+    } else if (doc && doc.ciStatus && doc.ciStatus !== 'unknown') {
+      prHint.textContent = 'CI: ' + doc.ciStatus;
+    } else {
+      prHint.textContent = 'Run /sdlc-kit:sync to update PR status';
+    }
 
     lane.appendChild(nameEl);
     lane.appendChild(barWrap);

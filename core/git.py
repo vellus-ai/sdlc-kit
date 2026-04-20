@@ -62,9 +62,10 @@ def sync_worktrees(vault_root: Path, conn: sqlite3.Connection) -> dict:
         pass
 
     synced = 0
+    SKIP_PREFIXES = {"main", "master", "develop", "HEAD"}
     for wt in worktrees:
         branch = wt["branch"]
-        if not branch or not (branch.startswith("feat/") or branch.startswith("fix/")):
+        if not branch or branch in SKIP_PREFIXES:
             continue
         pr = pr_map.get(branch, {})
         conn.execute(
