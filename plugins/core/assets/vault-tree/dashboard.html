@@ -588,12 +588,25 @@ function renderUpdateModal(latest) {
 
 async function generateUpdateScript() {
   if (!rootHandle) return;
+  const btn = document.getElementById('btn-generate-script');
+  const notice = document.getElementById('update-copy-notice');
+
+  // Immediate feedback before any async work
+  btn.textContent = 'Gerando…';
+  btn.disabled = true;
+
+  const ok = await ensureWritePermission();
+  if (!ok) {
+    btn.textContent = 'Sem permissão de escrita';
+    btn.disabled = false;
+    setTimeout(() => { btn.textContent = 'Gerar script .bat'; }, 3000);
+    return;
+  }
+
   const repoName = PLUGIN_REPO.split('/')[1];
   const cmdCore = `claude plugin install ${repoName}@${repoName}`;
   const cmdExt  = `claude plugin install ${repoName}-extended@${repoName}`;
 
-  // Derive Windows vault path from current page URL
-  // file:///C:/workspace/travessias/.sdlc/dashboard.html -> C:\workspace\travessias\.sdlc
   const rawPath = decodeURIComponent(window.location.pathname)
     .replace(/^\//, '').replace(/\//g, '\\');
   const vaultWinPath = rawPath.substring(0, rawPath.lastIndexOf('\\'));
@@ -620,14 +633,13 @@ async function generateUpdateScript() {
     'pause',
     '',
   ];
-  const scriptContent = lines.join('\r\n');
 
-  const btn = document.getElementById('btn-generate-script');
   try {
     const fileHandle = await rootHandle.getFileHandle('_sdlc-update.bat', { create: true });
     const writable = await fileHandle.createWritable();
-    await writable.write(scriptContent);
+    await writable.write(lines.join('\r\n'));
     await writable.close();
+
     const batUrl = 'file:///' + vaultWinPath.replace(/\\/g, '/') + '/_sdlc-update.bat';
     btn.textContent = 'Executar script ↗';
     btn.disabled = false;
@@ -639,10 +651,10 @@ async function generateUpdateScript() {
       a.click();
       document.body.removeChild(a);
     };
-    const notice = document.getElementById('update-copy-notice');
     if (notice) notice.textContent = 'Script gerado — clique em Executar para rodar';
   } catch (e) {
     btn.textContent = 'Erro ao gerar';
+    btn.disabled = false;
     setTimeout(() => { btn.textContent = 'Gerar script .bat'; }, 3000);
   }
 }
